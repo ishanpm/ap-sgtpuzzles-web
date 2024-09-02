@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="puzzles.css">
+    <script src="puzzles.js" type="module"></script>
+</head>
+<body>
+    <div class="content">
+        <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
+            <template x-for="entry in entries" :key="entry.id">
+                <li>
+                    <button tabindex="0" class="puzzle" :class="[entry.state, entry == current ? 'selected' : null]" @click="selectPuzzle(entry)"
+                    :disabled="entry.state == 'locked'">
+                        <span x-text="entry.id"></span>.
+                        <span x-text="entry.desc"></span>
+                    </button>
+                </li>
+            </template>
+        </ul>
+        <div class="puzzle-content">
+            <form x-data="$store.debugLoader" @submit.prevent="load()">
+                <label>Genre: <input x-model="genre"></label>
+                <label>ID: <input x-model="id"></label>
+                <label><input x-model="singleMode" type="checkbox"> Single puzzle mode</label>  
+                <button type="submit">Load</button>
+            </form>
+            <iframe src="about:blank" id="puzzleframe" width="500" height="500"></iframe>
+            <div>
+                <div x-data="$store.status" x-text="message"></div>
+                <template x-data="$store.errorMessage" x-if="visible">
+                    <div>
+                        <span x-text="message"></span>
+                        <button @click="dismiss">OK</button>
+                    </div>
+                </template>
+                <button x-data :style="{display: $store.singleMode ? 'none' : null}" onclick="newPuzzle()">New</button>
+                <button onclick="restartPuzzle()">Restart</button>
+                <button x-data onclick="undoPuzzle()" :disabled="!$store.puzzleState.undoEnabled">Undo</button>
+                <button x-data onclick="redoPuzzle()" :disabled="!$store.puzzleState.redoEnabled">Redo</button>
+                <button x-data :style="{display: $store.singleMode ? 'none' : null}" :disabled="!$store.puzzleState.solveEnabled" onclick="solvePuzzle()">
+                    Solve
+                </button>
+                <label>Solved?
+                    <span x-data x-text="$store.puzzleState.solved ? 'yes' : 'no'">(uninitialized)</span>
+                </label>
+                <template x-data x-if="!$store.singleMode">
+                    <div>
+                        <input id="puzzle-id">
+                        <button>Get Seed</button>
+                        <button>Get ID</button>
+                        <button>Set ID/Seed</button>
+                    </div>
+                </template>
+                <template x-data x-if="!$store.singleMode">
+                    <ul role="menu">
+                        <template x-for="preset in $store.puzzlePresets">
+                            <li>
+                                <label>
+                                    <input type="radio" name="preset" @click="setPreset(preset.id)">
+                                    <span x-text="preset.name"></span>
+                                </label>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
+                <hr>
+                <template x-data="$store.puzzleDialog" x-if="visible">
+                    <div>
+                        <ul>
+                            <template x-for="control in controls">
+                                <li>
+                                    <template x-if="control.type == 'string'">
+                                        <label>
+                                            <span x-text="control.title"></span>
+                                            <input x-model="control.value">
+                                        </label>
+                                    </template>
+                                    <template x-if="control.type == 'choice'">
+                                        <label>
+                                            <span x-text="control.title"></span>
+                                            <select x-model="control.value">
+                                                <template x-for="(display, id) in control.choices">
+                                                    <option x-text="display" :value="id" :selected="id == control.value"></option>
+                                                </template>
+                                            </select>
+                                        </label>
+                                    </template>
+                                    <template x-if="control.type == 'boolean'">
+                                        <label>
+                                            <input type="checkbox" x-model="control.value">
+                                            <span x-text="control.title"></span>
+                                        </label>
+                                    </template>
+                                </li>
+                            </template>
+                        </ul>
+                        <button @click="confirm()">OK</button>
+                        <button @click="cancel()">Cancel</button>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

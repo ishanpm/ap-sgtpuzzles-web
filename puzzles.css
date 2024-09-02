@@ -1,0 +1,40 @@
+.content {
+    display: flex;
+    flex-direction: row;
+}
+
+.puzzle-selector {
+    flex-basis: 20em;
+    margin-right: 0.5em;
+    overflow-y: scroll;
+    padding: 0px;
+    list-style: none;
+}
+
+.puzzle-selector .puzzle {
+    display: block;
+    width: 100%;
+    padding: 0.2em;
+    border: 1px solid gray;
+    border-radius: 2px;
+    cursor: pointer;
+
+    &.selected {
+        font-weight: bold;
+        background-color: #ccf;
+    }
+
+    &.locked {
+        cursor: unset;
+    }
+
+    &.solved, &.selected.solved {
+        background-color: #cfc;
+    }
+}
+
+
+
+.puzzle-content {
+    flex-grow: 1;
+}
