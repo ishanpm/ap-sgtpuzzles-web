@@ -1,0 +1,3 @@
+[submodule "ap-sgtpuzzles"]
+	path = ap-sgtpuzzles
+	url = git@github.com:ishanpm/ap-sgtpuzzles.git
