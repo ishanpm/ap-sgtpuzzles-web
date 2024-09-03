@@ -18,7 +18,7 @@
             </template>
         </ul>
         <div class="puzzle-content">
-            <form x-data="$store.debugLoader" @submit.prevent="load()">
+            <form x-data="$store.debugLoader" @submit.prevent="load()", style="display: none;">
                 <label>Genre: <input x-model="genre"></label>
                 <label>ID: <input x-model="id"></label>
                 <label><input x-model="singleMode" type="checkbox"> Single puzzle mode</label>  
@@ -27,7 +27,6 @@
             <form x-data="$store.connectionInfo" @submit.prevent="connect()">
                 <label>Host: <input x-model="hostname"></label>
                 <label>Port: <input x-model="port"></label>
-                <label>Game: <input x-model="game"></label>
                 <label>Player: <input x-model="player"></label>
                 <button type="submit">Load</button>
             </form>

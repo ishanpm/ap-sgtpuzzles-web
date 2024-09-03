@@ -149,10 +149,9 @@ function initStores() {
     Alpine.store("connectionInfo", {
         hostname: "localhost",
         port: "38281",
-        game: "",
         player: "Player1",
         connect() {
-            connectAP(this.hostname, +this.port, this.game, this.player);
+            connectAP(this.hostname, +this.port, this.player);
         }
     })
 
@@ -372,7 +371,7 @@ function dialogCancel() {
     sendMessage("dialogCancel")
 }
 
-async function connectAP(hostname, port, game, player) {
+async function connectAP(hostname, port, player) {
     const connectionInfo = {
         hostname: hostname, // Replace with the actual AP server hostname.
         port: port, // Replace with the actual AP server port.
@@ -396,14 +395,18 @@ async function connectAP(hostname, port, game, player) {
     puzzleList.current = [];
 
     for (let i = 0; i < slotData.puzzles.length; i++) {
-        let puzzleMatch = /^([^:]*):(.*)$/.exec(slotData.puzzles[i]);
+        let puzzleMatch = /^([^:]*):(([^#:]*)((#|:).*))?$/.exec(slotData.puzzles[i]);
         let id = i+1;
         let genre = puzzleMatch[1];
-        let puzzleId = puzzleMatch[2];
-        let desc = slotData.puzzles[i];
+        let puzzleId = puzzleMatch[2]
+        let puzzleParams = puzzleMatch[3];
 
         let newEntry = {
-            id, genre, puzzleId, desc, state: "unlocked"
+            id,
+            genre,
+            puzzleId,
+            desc: `${genre}: ${puzzleParams}`,
+            state: "unlocked"
         };
 
         puzzleList.entries.push(newEntry);
