@@ -4,6 +4,7 @@ const Alpine = require('alpinejs').default;
 document.addEventListener("alpine:init", onInit)
 
 var puzzleframe;
+var client;
 
 function sendMessage(command, ...args) {
     if (puzzleframe) {
@@ -146,11 +147,12 @@ function initStores() {
     })
 
     Alpine.store("connectionInfo", {
-        hostname: "",
-        port: "",
+        hostname: "localhost",
+        port: "38281",
+        game: "",
         player: "Player1",
         connect() {
-            connectAP(hostname, port, player);
+            connectAP(this.hostname, +this.port, this.game, this.player);
         }
     })
 
@@ -370,12 +372,48 @@ function dialogCancel() {
     sendMessage("dialogCancel")
 }
 
-function connectAP(hostname, port, player) {
-    console.log(Client);
+async function connectAP(hostname, port, game, player) {
+    const connectionInfo = {
+        hostname: hostname, // Replace with the actual AP server hostname.
+        port: port, // Replace with the actual AP server port.
+        game: "SimonTathamPuzzles",
+        name: player, // Replace with the player slot name.
+        items_handling: ITEMS_HANDLING_FLAGS.REMOTE_ALL,
+    };
+
+    client = new Client();
+    window.client = client;
+
+    await client.connect(connectionInfo);
+
+    console.log("connected to AP");
+
+    let slotData = client.data.slotData;
+    const puzzleList = Alpine.store("puzzleList");
+
+    puzzleList.entries = [];
+    puzzleList.currentId = -1;
+    puzzleList.current = [];
+
+    for (let i = 0; i < slotData.puzzles.length; i++) {
+        let puzzleMatch = /^([^:]*):(.*)$/.exec(slotData.puzzles[i]);
+        let id = i+1;
+        let genre = puzzleMatch[1];
+        let puzzleId = puzzleMatch[2];
+        let desc = slotData.puzzles[i];
+
+        let newEntry = {
+            id, genre, puzzleId, desc, state: "unlocked"
+        };
+
+        puzzleList.entries.push(newEntry);
+    }
 }
 
 // Expose some variables to global scope for ease of debugging
 window.Alpine = Alpine;
 window.store = Alpine.store;
+window.client = client;
+window.Client = Client;
 
 Alpine.start();

@@ -24,6 +24,13 @@
                 <label><input x-model="singleMode" type="checkbox"> Single puzzle mode</label>  
                 <button type="submit">Load</button>
             </form>
+            <form x-data="$store.connectionInfo" @submit.prevent="connect()">
+                <label>Host: <input x-model="hostname"></label>
+                <label>Port: <input x-model="port"></label>
+                <label>Game: <input x-model="game"></label>
+                <label>Player: <input x-model="player"></label>
+                <button type="submit">Load</button>
+            </form>
             <iframe src="about:blank" id="puzzleframe" width="500" height="500"></iframe>
             <div>
                 <div x-data="$store.status" x-text="message"></div>
