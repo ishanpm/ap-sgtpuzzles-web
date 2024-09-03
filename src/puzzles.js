@@ -1,5 +1,5 @@
-import { Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE } from "https://unpkg.com/archipelago.js/dist/archipelago.min.js?module";
-import Alpine from 'https://unpkg.com/alpinejs?module';
+const { Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE } = require("archipelago.js");
+const Alpine = require('alpinejs').default;
 
 document.addEventListener("alpine:init", onInit)
 

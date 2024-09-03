@@ -1,0 +1,31 @@
+{
+  "name": "ap-sgtpuzzles-web",
+  "version": "1.0.0",
+  "description": "Web frontend for Simon Tatham's Portable Puzzle Collection with Archipelago support ",
+  "main": "puzzles.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/ishanpm/ap-sgtpuzzles-web.git"
+  },
+  "author": "ishanpm",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ishanpm/ap-sgtpuzzles-web/issues"
+  },
+  "homepage": "https://github.com/ishanpm/ap-sgtpuzzles-web#readme",
+  "dependencies": {
+    "alpinejs": "^3.14.1",
+    "archipelago.js": "^1.1.0",
+    "buffer": "^6.0.3",
+    "process": "^0.11.10",
+    "stream-browserify": "^3.0.0",
+    "timers": "^0.1.1",
+    "util": "^0.12.5"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.5"
+  }
+}

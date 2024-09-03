@@ -26,7 +26,7 @@ window.onload = function() {
 
 function loadPuzzle(name) {
     let elem = document.createElement("script")
-    elem.setAttribute("src", `../puzzles/build-emscripten/${name}.js`)
+    elem.setAttribute("src", `res/${name}.js`)
     document.head.appendChild(elem)
 }
 
