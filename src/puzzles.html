@@ -7,18 +7,23 @@
 <body>
     <div class="content">
         <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
-            <template x-for="entry in entries" :key="entry.id">
+            <template x-for="entry in entries" :key="entry.index">
                 <li>
-                    <button tabindex="0" class="puzzle" :class="[entry.state, entry == current ? 'selected' : null]" @click="selectPuzzle(entry)"
-                    :disabled="entry.state == 'locked'">
-                        <span x-text="entry.id"></span>.
+                    <button tabindex="0" class="puzzle"
+                    :class="{selected: entry == current, solved: entry.solved, unsolved: !entry.solved, locked: entry.locked, unlocked: !entry.unlocked}"
+                    @click="selectPuzzle(entry)"
+                    :disabled="entry.locked && !$store.debugMode">
+                        <span x-text="entry.index"></span>.
                         <span x-text="entry.desc"></span>
                     </button>
                 </li>
             </template>
         </ul>
         <div class="puzzle-content">
-            <form x-data="$store.debugLoader" @submit.prevent="load()", style="display: none;">
+            <div>
+                <label><input type="checkbox" x-data x-model="$store.debugMode"> Debug mode</label>
+            </div>
+            <form x-data="$store.debugLoader" @submit.prevent="load()" :style="{display: $store.debugMode ? null : 'none'}">
                 <label>Genre: <input x-model="genre"></label>
                 <label>ID: <input x-model="id"></label>
                 <label><input x-model="singleMode" type="checkbox"> Single puzzle mode</label>  
@@ -28,7 +33,7 @@
                 <label>Host: <input x-model="hostname"></label>
                 <label>Port: <input x-model="port"></label>
                 <label>Player: <input x-model="player"></label>
-                <button type="submit">Load</button>
+                <button type="submit">Connect</button>
             </form>
             <iframe src="about:blank" id="puzzleframe" width="500" height="500"></iframe>
             <div>
@@ -43,7 +48,7 @@
                 <button onclick="restartPuzzle()">Restart</button>
                 <button x-data onclick="undoPuzzle()" :disabled="!$store.puzzleState.undoEnabled">Undo</button>
                 <button x-data onclick="redoPuzzle()" :disabled="!$store.puzzleState.redoEnabled">Redo</button>
-                <button x-data :style="{display: $store.singleMode ? 'none' : null}" :disabled="!$store.puzzleState.solveEnabled" onclick="solvePuzzle()">
+                <button x-data :style="{display: ($store.singleMode && !$store.debugMode) ? 'none' : null}" :disabled="!$store.puzzleState.solveEnabled" onclick="solvePuzzle()">
                     Solve
                 </button>
                 <label>Solved?

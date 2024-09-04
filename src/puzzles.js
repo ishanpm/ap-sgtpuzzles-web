@@ -1,10 +1,117 @@
-const { Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE } = require("archipelago.js");
+const {
+    Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE, LocationsManager, ReceivedItemsPacket,
+    CLIENT_STATUS,
+    
+} = require("archipelago.js");
 const Alpine = require('alpinejs').default;
 
 document.addEventListener("alpine:init", onInit)
 
-var puzzleframe;
-var client;
+let puzzleframe;
+let apReady = false;
+
+/**
+ * @type{Client}
+ */
+let client;
+
+class ArchipelagoPuzzle {
+    constructor(options) {
+        // Puzzle genre
+        this.genre = options.genre;
+
+        // Puzzle generation options (size, difficulty, etc.)
+        this.params = options.params;
+
+        // Human-readable puzzle description
+        this.desc = "";
+
+        // Puzzle number; also Archipelago region/item number
+        this.index = options.index;
+
+        // Puzzle id (params:data)
+        this.puzzleId = options.puzzleId;
+
+        // Puzzle seed (genParams#seed)
+        this.puzzleSeed = options.puzzleSeed;
+
+        this.solved = options.solved ?? false;
+        this.locked = options.locked ?? false;
+        this.item = options.item;
+        this.state = "";
+
+        this.updateDescription();
+        this.updateState();
+    }
+
+    updateDescription() {
+        this.desc = `${this.genre}: ${this.params}`;
+    }
+
+    updateState() {
+        if (this.locked) {
+            this.state = "locked";
+        } else if (this.solved) {
+            this.state = "solved";
+        } else {
+            this.state = "unlocked";
+        }
+    }
+
+    onSolve() {
+        this.solved = true;
+        this.updateState();
+
+        // TODO should probably extract this somewhere
+        if (apReady) {
+            let locationId = this.index - 1 + 925000;
+
+            client.locations.check(locationId);
+        }
+    }
+
+    static fromArchipelagoString(genreAndParams, baseSeed, index, options) {
+        let seedPrefix = ""+index;
+        seedPrefix = seedPrefix.padStart(3, "0");
+        let seed = `${seedPrefix}${baseSeed}`;
+
+        let genreParamsMatch = /^([^:]*):(.*)$/.exec(genreAndParams);
+
+        options ??= {};
+
+        options.genre = genreParamsMatch[1];
+        options.params = genreParamsMatch[2];
+        options.puzzleSeed = `${options.params}#${seed}`;
+        options.index = index;
+
+        return new ArchipelagoPuzzle(options);
+    }
+
+    static fromPuzzlesString(genre, seedOrId, index, options) {
+        options ??= {};
+
+        if (seedOrId) {
+            let paramsSeparatorMatch = /^([^:#]*)([:#]?)/.exec(seedOrId);
+
+            options.params = paramsSeparatorMatch[1];
+            let separator = paramsSeparatorMatch[2];
+
+            if (separator == ":") {
+                options.puzzleId = seedOrId;
+            } else {
+                // also treat string with no separator as seed
+                options.puzzleSeed = seedOrId;
+            }
+        } else {
+            options.params = "";
+        }
+
+        options.index ??= index;
+        options.genre = genre;
+
+        return new ArchipelagoPuzzle(options);
+    }
+}
 
 function sendMessage(command, ...args) {
     if (puzzleframe) {
@@ -30,26 +137,38 @@ function initStores() {
     // List of available puzzles from Archipelago
     Alpine.store("puzzleList", {
         entries: [
-            {id: 1, genre: "loopy", puzzleId: "7x7e#123", desc: "Loopy - 7x7 Easy", state: "locked"},
-            {id: 2, genre: "net", puzzleId: "5x5#123", desc: "Net - 5x5", state: "unsolved"},
-            {id: 3, genre: "net", puzzleId: "2x2#456", desc: "Net - 2x2", state: "unsolved"},
-            {id: 4, genre: "fifteen", puzzleId: "2x2#123", desc: "Fifteen - 2x2", state: "unsolved"}
+            ArchipelagoPuzzle.fromPuzzlesString("loopy", "7x7e#123", 1, {locked: true}),
+            ArchipelagoPuzzle.fromPuzzlesString("net", "5x5#123", 2),
+            ArchipelagoPuzzle.fromPuzzlesString("net", "2x2#456", 3),
+            ArchipelagoPuzzle.fromPuzzlesString("fifteen", "2x2#123", 4),
+            ArchipelagoPuzzle.fromPuzzlesString("loopy", "", 5)
         ],
-        currentId: -1,
+        currentIndex: -1,
         current: null,
         selectPuzzle(entry) {
-            if (entry.state == "locked" || entry.id == this.currentId) {
+            if (!entry) {
+                this.currentIndex = -1;
+                this.current = null;
                 return;
             }
 
-            this.currentId = entry.id;
+            if ((entry.locked && !Alpine.store("debugMode")) || entry.index == this.currentIndex) {
+                return;
+            }
+
+            this.currentIndex = entry.index;
             this.current = entry;
-            loadPuzzle(entry.genre, entry.puzzleId, true);
+            if (entry.puzzleId) {
+                loadPuzzle(entry.genre, entry.puzzleId, true);
+            } else if (entry.puzzleSeed) {
+                loadPuzzle(entry.genre, entry.puzzleSeed, true);
+            } else {
+                loadPuzzle(entry.genre, "", false);
+            }
         },
         markSolved() {
-            // TODO check if puzzle is actually initialized
             if (this.current) {
-                this.current.state = "solved";
+                this.current.onSolve();
             }
         }
     })
@@ -142,6 +261,7 @@ function initStores() {
         id: "",
         singleMode: false,
         load() {
+            Alpine.store("puzzleList").selectPuzzle(null);
             loadPuzzle(this.genre, this.id, this.singleMode);
         }
     })
@@ -170,6 +290,11 @@ function resetPuzzleMetadata() {
 }
 
 function loadPuzzle(genre, id, singleMode) {
+    let debugLoader = Alpine.store("debugLoader");
+    debugLoader.genre = genre;
+    debugLoader.id = id;
+    debugLoader.singleMode = !!singleMode;
+
     Alpine.store("singleMode", !!singleMode)
 
     const puzzleFrameBase = "puzzleframe.html";
@@ -371,19 +496,87 @@ function dialogCancel() {
     sendMessage("dialogCancel")
 }
 
+function onReceiveItems(event) {
+    if (apReady) {
+        syncAPStatus();
+    }
+}
+
+function logEvent(event) {
+    console.log(event);
+}
+
+function hasItem(itemId) {
+    return client.items.received.findIndex(e => e.item == itemId) > -1;
+}
+
+function syncAPStatus() {
+    if (!apReady) return;
+
+    const puzzleList = Alpine.store("puzzleList");
+
+    let allSolved = true;
+
+    for (let entry of puzzleList.entries) {
+        let dirty = false;
+        let itemId = entry.index - 1 + 925000;
+        let locationId = itemId;
+
+        // TODO distinguish solved from collected
+        if (!entry.solved && client.locations.checked.includes(locationId)) {
+            entry.solved = true;
+            dirty = true;
+        } else if (!entry.solved) {
+            allSolved = false;
+        }
+
+        if (entry.locked && hasItem(itemId)) {
+            entry.locked = false;
+            dirty = true;
+        }
+
+        if (dirty) {
+            entry.updateState();
+        }
+    }
+
+    if (allSolved) {
+        client.updateStatus(CLIENT_STATUS.GOAL);
+    }
+}
+
 async function connectAP(hostname, port, player) {
+    if (client) {
+        apReady = false;
+        console.log("disconnecting from AP...");
+        await client.disconnect();
+    } else {
+        client = new Client();
+        window.client = client;
+    }
+
+    // TODO probably unnecessary to sync both due to ReceivedItems and RoomUpdate..?
+    client.addListener("ReceivedItems", onReceiveItems)
+    client.addListener("RoomUpdate", syncAPStatus)
+    client.addListener("PacketReceived", logEvent);
+
+    console.log("connecting to AP...");
+
     const connectionInfo = {
-        hostname: hostname, // Replace with the actual AP server hostname.
-        port: port, // Replace with the actual AP server port.
+        hostname: hostname,
+        port: port,
         game: "SimonTathamPuzzles",
-        name: player, // Replace with the player slot name.
+        name: player,
         items_handling: ITEMS_HANDLING_FLAGS.REMOTE_ALL,
     };
 
-    client = new Client();
-    window.client = client;
-
-    await client.connect(connectionInfo);
+    try {
+        await client.connect(connectionInfo);
+    } catch (e) {
+        console.log(e)
+        console.error("Couldn't connect")
+        return;
+    }
 
     console.log("connected to AP");
 
@@ -394,29 +587,43 @@ async function connectAP(hostname, port, player) {
     puzzleList.currentId = -1;
     puzzleList.current = [];
 
-    for (let i = 0; i < slotData.puzzles.length; i++) {
-        let puzzleMatch = /^([^:]*):(([^#:]*)((#|:).*))?$/.exec(slotData.puzzles[i]);
-        let id = i+1;
-        let genre = puzzleMatch[1];
-        let puzzleId = puzzleMatch[2]
-        let puzzleParams = puzzleMatch[3];
+    let baseSeed = slotData.world_seed;
 
-        let newEntry = {
-            id,
-            genre,
-            puzzleId,
-            desc: `${genre}: ${puzzleParams}`,
-            state: "unlocked"
-        };
+    for (let i = 0; i < slotData.puzzles.length; i++) {
+        let options = {locked: true}
+
+        let newEntry = ArchipelagoPuzzle.fromArchipelagoString(slotData.puzzles[i], baseSeed, i+1, options)
 
         puzzleList.entries.push(newEntry);
     }
+
+    // Temporarily pad to 25 puzzles
+    for (let i = puzzleList.entries.length; i < 25; i++) {
+        let options = {locked: true}
+
+        let newEntry = ArchipelagoPuzzle.fromArchipelagoString("fifteen:2x2", baseSeed, i+1, options)
+
+        puzzleList.entries.push(newEntry);
+    }
+
+    apReady = true;
+    syncAPStatus();
 }
+
+// Expose UI functions to global scope
+// I should probably move these to Alpine
+window.newPuzzle = newPuzzle;
+window.restartPuzzle = restartPuzzle;
+window.undoPuzzle = undoPuzzle;
+window.redoPuzzle = redoPuzzle;
+window.solvePuzzle = solvePuzzle;
+window.setPreset = setPreset;
 
 // Expose some variables to global scope for ease of debugging
 window.Alpine = Alpine;
 window.store = Alpine.store;
 window.client = client;
 window.Client = Client;
+window.ArchipelagoPuzzle = ArchipelagoPuzzle;
 
 Alpine.start();
