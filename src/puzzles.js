@@ -36,6 +36,7 @@ class ArchipelagoPuzzle {
         this.puzzleSeed = options.puzzleSeed;
 
         this.solved = options.solved ?? false;
+        this.collected = options.collected ?? false;
         this.locked = options.locked ?? false;
         this.item = options.item;
         this.state = "";
@@ -143,6 +144,7 @@ function initStores() {
             ArchipelagoPuzzle.fromPuzzlesString("fifteen", "2x2#123", 4),
             ArchipelagoPuzzle.fromPuzzlesString("loopy", "", 5)
         ],
+        sortedEntries: [],
         currentIndex: -1,
         current: null,
         selectPuzzle(entry) {
@@ -170,8 +172,33 @@ function initStores() {
             if (this.current) {
                 this.current.onSolve();
             }
+        },
+        resort() {
+            // Helper comparison function
+            // 0 if a == b; -1 if a < b; 1 if a > b
+            // Can be chained with ||
+            // Note: this sorts "false" before "true"
+            function compare(a,b) {
+                if (a < b) return -1;
+                else if (a > b) return 1;
+                else return 0;
+            }
+
+            function sortKey(entry) {
+                if (entry.solved || entry.collected) return 2;
+                else if (entry.locked) return 1;
+                else return 0;
+            }
+
+            var sortedEntries = this.entries.slice();
+            
+            sortedEntries.sort((a,b) => compare(sortKey(a), sortKey(b)))
+
+            this.sortedEntries = sortedEntries;
         }
     })
+
+    Alpine.store("puzzleList").resort();
 
     // Various information about the current puzzle
     Alpine.store("puzzleState", {
@@ -523,10 +550,10 @@ function syncAPStatus() {
         let locationId = itemId;
 
         // TODO distinguish solved from collected
-        if (!entry.solved && client.locations.checked.includes(locationId)) {
-            entry.solved = true;
+        if (!entry.collected && client.locations.checked.includes(locationId)) {
+            entry.collected = true;
             dirty = true;
-        } else if (!entry.solved) {
+        } else if (!entry.collected) {
             allSolved = false;
         }
 
@@ -539,6 +566,8 @@ function syncAPStatus() {
             entry.updateState();
         }
     }
+
+    puzzleList.resort();
 
     if (allSolved) {
         client.updateStatus(CLIENT_STATUS.GOAL);
@@ -583,9 +612,8 @@ async function connectAP(hostname, port, player) {
     let slotData = client.data.slotData;
     const puzzleList = Alpine.store("puzzleList");
 
+    puzzleList.selectPuzzle(null);
     puzzleList.entries = [];
-    puzzleList.currentId = -1;
-    puzzleList.current = [];
 
     let baseSeed = slotData.world_seed;
 
@@ -593,15 +621,6 @@ async function connectAP(hostname, port, player) {
         let options = {locked: true}
 
         let newEntry = ArchipelagoPuzzle.fromArchipelagoString(slotData.puzzles[i], baseSeed, i+1, options)
-
-        puzzleList.entries.push(newEntry);
-    }
-
-    // Temporarily pad to 25 puzzles
-    for (let i = puzzleList.entries.length; i < 25; i++) {
-        let options = {locked: true}
-
-        let newEntry = ArchipelagoPuzzle.fromArchipelagoString("fifteen:2x2", baseSeed, i+1, options)
 
         puzzleList.entries.push(newEntry);
     }
@@ -625,5 +644,6 @@ window.store = Alpine.store;
 window.client = client;
 window.Client = Client;
 window.ArchipelagoPuzzle = ArchipelagoPuzzle;
+window.syncAPStatus = syncAPStatus;
 
 Alpine.start();

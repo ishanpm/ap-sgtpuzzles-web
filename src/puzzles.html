@@ -7,10 +7,11 @@
 <body>
     <div class="content">
         <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
-            <template x-for="entry in entries" :key="entry.index">
+            <template x-for="entry in sortedEntries" :key="entry.index">
                 <li>
-                    <button tabindex="0" class="puzzle"
-                    :class="{selected: entry == current, solved: entry.solved, unsolved: !entry.solved, locked: entry.locked, unlocked: !entry.unlocked}"
+                    <button tabindex="0"
+                    :class="['puzzle', entry == current ? 'selected' : null, entry.solved ? 'solved' : 'unsolved',
+entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollected']"
                     @click="selectPuzzle(entry)"
                     :disabled="entry.locked && !$store.debugMode">
                         <span x-text="entry.index"></span>.

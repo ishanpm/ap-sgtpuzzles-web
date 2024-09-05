@@ -12,5 +12,5 @@ cd ../..
 echo "Copying resource files"
 
 mkdir -p dist/res
-cp ap-sgtpuzzles/build-emscripten/*.js dist/res
-cp ap-sgtpuzzles/build-emscripten/*.wasm dist/res
+cp -f ap-sgtpuzzles/build-emscripten/*.js dist/res
+cp -f ap-sgtpuzzles/build-emscripten/*.wasm dist/res
