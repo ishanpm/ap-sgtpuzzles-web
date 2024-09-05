@@ -37,11 +37,15 @@ body {
         color: #b4b4b4;
     }
 
-    &.solved, &.selected.solved {
+    &.collected {
         background-color: #cfc;
     }
 
-    &.collected {
+    &.selected.collected {
+        background-color: rgb(204, 255, 235);
+    }
+
+    &.solved {
         text-decoration: line-through;
     }
 }
