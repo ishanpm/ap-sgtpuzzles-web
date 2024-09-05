@@ -1,9 +1,16 @@
 const {
     Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE, LocationsManager, ReceivedItemsPacket,
-    CLIENT_STATUS,
-    
+    CLIENT_STATUS
 } = require("archipelago.js");
 const Alpine = require('alpinejs').default;
+
+const genres = [
+    "blackbox","bridges","cube","dominosa","fifteen","filling","flip","flood","galaxies",
+    "guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
+    "netslide","palisade","pattern","pearl","pegs","range","rect","samegame","signpost",
+    "singles","sixteen","slant","solo","tents","towers","tracks","twiddle","undead",
+    "unequal","unruly","untangle"
+]
 
 document.addEventListener("alpine:init", onInit)
 
@@ -76,12 +83,12 @@ class ArchipelagoPuzzle {
         seedPrefix = seedPrefix.padStart(3, "0");
         let seed = `${seedPrefix}${baseSeed}`;
 
-        let genreParamsMatch = /^([^:]*):(.*)$/.exec(genreAndParams);
+        let genreParamsMatch = /^([^:]*)(:(.*))?$/.exec(genreAndParams);
 
         options ??= {};
 
         options.genre = genreParamsMatch[1];
-        options.params = genreParamsMatch[2];
+        options.params = genreParamsMatch[3] ?? "";
         options.puzzleSeed = `${options.params}#${seed}`;
         options.index = index;
 
@@ -301,6 +308,8 @@ function initStores() {
             connectAP(this.hostname, +this.port, this.player);
         }
     })
+
+    Alpine.store("genres", genres)
 
     resetPuzzleMetadata();
 }
@@ -612,8 +621,12 @@ async function connectAP(hostname, port, player) {
     let slotData = client.data.slotData;
     const puzzleList = Alpine.store("puzzleList");
 
+    // TODO styling sometimes doesn't update when reconnecting while a puzzle is selected.
+    // Seems like a bug with Alpine (or with how I'm using it), I'll probably have to switch to a different
+    // UI/reactivity library
     puzzleList.selectPuzzle(null);
     puzzleList.entries = [];
+    puzzleList.sortedEntries = [];
 
     let baseSeed = slotData.world_seed;
 
