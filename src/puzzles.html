@@ -25,7 +25,14 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                 <label><input type="checkbox" x-data x-model="$store.debugMode"> Debug mode</label>
             </div>
             <form x-data="$store.debugLoader" @submit.prevent="load()" :style="{display: $store.debugMode ? null : 'none'}">
-                <label>Genre: <input x-model="genre"></label>
+                <label>
+                    Genre:
+                    <select x-model="genre">
+                        <template x-for="value in $store.genres">
+                            <option x-text="value"></option>
+                        </template>
+                    </select>
+                </label>
                 <label>ID: <input x-model="id"></label>
                 <label><input x-model="singleMode" type="checkbox"> Single puzzle mode</label>  
                 <button type="submit">Load</button>
@@ -49,12 +56,18 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                 <button onclick="restartPuzzle()">Restart</button>
                 <button x-data onclick="undoPuzzle()" :disabled="!$store.puzzleState.undoEnabled">Undo</button>
                 <button x-data onclick="redoPuzzle()" :disabled="!$store.puzzleState.redoEnabled">Redo</button>
-                <button x-data :style="{display: ($store.singleMode && !$store.debugMode) ? 'none' : null}" :disabled="!$store.puzzleState.solveEnabled" onclick="solvePuzzle()">
+                <button x-data :style="{display: ($store.singleMode && !$store.debugMode) ? 'none' : null}" onclick="solvePuzzle()"
+                x-text="$store.puzzleState.solveEnabled ? 'Solve' : 'Skip'">
                     Solve
                 </button>
                 <label>Solved?
                     <span x-data x-text="$store.puzzleState.solved ? 'yes' : 'no'">(uninitialized)</span>
                 </label>
+                <div style="overflow: auto; word-break: break-word;">
+                    Seed: <label x-data x-text="$store.puzzleState.gameSeed"></label>
+                    <br>
+                    ID: <label x-data x-text="$store.puzzleState.gameId"></label>
+                </div>
                 <template x-data x-if="!$store.singleMode">
                     <div>
                         <input id="puzzle-id">

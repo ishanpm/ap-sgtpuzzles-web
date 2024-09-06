@@ -420,7 +420,7 @@ function js_dialog_string(index, title, initvalue) {
 
 function js_dialog_choices(index, title, choiceStr, initvalue) {
     // Split choiceStr by its first character
-    choices = choiceStr.split(choiceStr[0])
+    let choices = choiceStr.split(choiceStr[0])
     choices.shift()
 
     Alpine.store("puzzleDialog").addControl(index, "choice", title, initvalue, choices)
@@ -507,6 +507,10 @@ function redoPuzzle() {
 
 function solvePuzzle() {
     sendMessage("solvePuzzle");
+
+    // Mark puzzle as solved regardless of whether the puzzle was actually solved
+
+    Alpine.store("puzzleList").markSolved()
 }
 
 function setPreset(id) {
@@ -624,9 +628,9 @@ async function connectAP(hostname, port, player) {
     // TODO styling sometimes doesn't update when reconnecting while a puzzle is selected.
     // Seems like a bug with Alpine (or with how I'm using it), I'll probably have to switch to a different
     // UI/reactivity library
-    puzzleList.selectPuzzle(null);
     puzzleList.entries = [];
     puzzleList.sortedEntries = [];
+    puzzleList.selectPuzzle(null);
 
     let baseSeed = slotData.world_seed;
 
