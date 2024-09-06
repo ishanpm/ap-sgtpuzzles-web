@@ -607,7 +607,7 @@ async function connectAP(hostname, port, player) {
     const connectionInfo = {
         hostname: hostname,
         port: port,
-        game: "SimonTathamPuzzles",
+        game: "Simon Tatham's Portable Puzzle Collection",
         name: player,
         items_handling: ITEMS_HANDLING_FLAGS.REMOTE_ALL,
     };
