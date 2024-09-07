@@ -50,9 +50,27 @@ body {
     }
 }
 
-
-
 .puzzle-content {
     flex-grow: 1;
     flex-basis: min-content;
+}
+
+.dialog-container {
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    bottom: 0px;
+    right: 0px;
+    background-color: rgba(0, 0, 0, 20%);
+    z-index: 100;
+    text-align: center;
+}
+
+.puzzle-dialog {
+    display: inline-block;
+    margin-top: 2em;
+    padding: 1em;
+    border: 2px grey;
+    background-color: white;
+    text-align: left;
 }

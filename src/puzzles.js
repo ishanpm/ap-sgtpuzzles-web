@@ -3,6 +3,8 @@ const {
     CLIENT_STATUS
 } = require("archipelago.js");
 const Alpine = require('alpinejs').default;
+const SaveData = require("./savedata.js");
+const {GameSave, getFile, getFileList, openDatabase} = SaveData;
 
 const genres = [
     "blackbox","bridges","cube","dominosa","fifteen","filling","flip","flood","galaxies",
@@ -129,6 +131,8 @@ function sendMessage(command, ...args) {
 
 function onInit() {
     console.log("puzzles.html: onInit")
+
+    openDatabase().then(_ => console.log("Savedata ready"))
 
     initStores()
 
@@ -378,6 +382,12 @@ function js_update_permalinks(gameId, gameSeed) {
     let puzzleState = Alpine.store("puzzleState");
     puzzleState.gameId = gameId;
     puzzleState.gameSeed = gameSeed;
+
+    let puzzleList = Alpine.store("puzzleList");
+
+    if (puzzleList.current && !puzzleList.current.puzzleId) {
+        puzzleList.current.puzzleId = gameId;
+    }
 }
 
 function js_update_status(newStatus) {
@@ -458,12 +468,19 @@ function js_error_box(message) {
     Alpine.store("errorMessage").show(message)
 }
 
+function savePuzzleDataCallback(data) {
+    console.log("Save file ready")
+    console.log(data)
+    window.puzzleSaveData = data;
+}
+
 const messageHandlers = {
     ready: onPuzzleFrameLoad, js_init_puzzle, js_post_init,
     js_update_permalinks, js_enable_undo_redo, js_remove_solve_button, js_update_status, js_update_key_labels,
     js_add_preset, js_add_preset_submenu, js_select_preset,
     js_dialog_init, js_dialog_string, js_dialog_choices, js_dialog_boolean, js_dialog_launch, js_dialog_cleanup,
-    js_canvas_set_statusbar, js_canvas_remove_statusbar, js_canvas_set_size, js_error_box, js_focus_canvas
+    js_canvas_set_statusbar, js_canvas_remove_statusbar, js_canvas_set_size, js_error_box, js_focus_canvas,
+    savePuzzleDataCallback
 }
 
 function processMessage(message) {
@@ -487,6 +504,10 @@ window.onmessage = processMessage
 //
 // UI functions
 //
+
+function showPreferences() {
+    sendMessage("showPreferences");
+}
 
 function newPuzzle() {
     sendMessage("newPuzzle");
@@ -534,6 +555,14 @@ function dialogConfirm() {
 
 function dialogCancel() {
     sendMessage("dialogCancel")
+}
+
+function savePuzzleData() {
+    sendMessage("savePuzzleData")
+}
+
+function loadPuzzleData(data) {
+    sendMessage("loadPuzzleData", data)
 }
 
 function onReceiveItems(event) {
@@ -648,12 +677,15 @@ async function connectAP(hostname, port, player) {
 
 // Expose UI functions to global scope
 // I should probably move these to Alpine
+window.showPreferences = showPreferences;
 window.newPuzzle = newPuzzle;
 window.restartPuzzle = restartPuzzle;
 window.undoPuzzle = undoPuzzle;
 window.redoPuzzle = redoPuzzle;
 window.solvePuzzle = solvePuzzle;
 window.setPreset = setPreset;
+window.savePuzzleData = savePuzzleData;
+window.loadPuzzleData = loadPuzzleData;
 
 // Expose some variables to global scope for ease of debugging
 window.Alpine = Alpine;
@@ -662,5 +694,6 @@ window.client = client;
 window.Client = Client;
 window.ArchipelagoPuzzle = ArchipelagoPuzzle;
 window.syncAPStatus = syncAPStatus;
+window.SaveData = SaveData;
 
 Alpine.start();
