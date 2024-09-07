@@ -132,7 +132,14 @@ function sendMessage(command, ...args) {
 function onInit() {
     console.log("puzzles.html: onInit")
 
-    openDatabase().then(_ => console.log("Savedata ready"))
+    async function initSaveData() {
+        await openDatabase()
+        console.log("Savedata open")
+        await loadFileList()
+        console.log("File list loaded")
+    }
+
+    initSaveData();
 
     initStores()
 
@@ -148,13 +155,7 @@ function onInit() {
 function initStores() {
     // List of available puzzles from Archipelago
     Alpine.store("puzzleList", {
-        entries: [
-            ArchipelagoPuzzle.fromPuzzlesString("loopy", "7x7e#123", 1, {locked: true}),
-            ArchipelagoPuzzle.fromPuzzlesString("net", "5x5#123", 2),
-            ArchipelagoPuzzle.fromPuzzlesString("net", "2x2#456", 3),
-            ArchipelagoPuzzle.fromPuzzlesString("fifteen", "2x2#123", 4),
-            ArchipelagoPuzzle.fromPuzzlesString("loopy", "", 5)
-        ],
+        entries: genres.map((genre,i) => ArchipelagoPuzzle.fromPuzzlesString(genre, "", i+1)),
         sortedEntries: [],
         currentIndex: -1,
         current: null,
@@ -309,7 +310,18 @@ function initStores() {
         port: "38281",
         player: "Player1",
         connect() {
-            connectAP(this.hostname, +this.port, this.player);
+            createFile(this.hostname, +this.port, this.player);
+        }
+    })
+
+    Alpine.store("gamesaves", {
+        list: [],
+        current: null,
+        loadFile(file) {
+            loadFile(file);
+        },
+        deleteFile(file) {
+            deleteFile(file)
         }
     })
 
@@ -382,12 +394,6 @@ function js_update_permalinks(gameId, gameSeed) {
     let puzzleState = Alpine.store("puzzleState");
     puzzleState.gameId = gameId;
     puzzleState.gameSeed = gameSeed;
-
-    let puzzleList = Alpine.store("puzzleList");
-
-    if (puzzleList.current && !puzzleList.current.puzzleId) {
-        puzzleList.current.puzzleId = gameId;
-    }
 }
 
 function js_update_status(newStatus) {
@@ -616,12 +622,87 @@ function syncAPStatus() {
     }
 }
 
+/**
+ * 
+ * @param {SaveData.GameSave} file 
+ */
+async function loadFile(file) {
+    const gamesaves = Alpine.store("gamesaves")
+    gamesaves.current = file;
+    await disconnectAP();
+
+    let connectOk = false;
+
+    try {
+        await connectAP(file.host, file.port, file.player);
+        connectOk = true;
+    } catch (e) {
+        console.error("Failed to connect to Archipelago");
+        console.error(e);
+    }
+
+    if (connectOk) {
+        // Verify puzzle list and seed match
+    }
+
+    loadFileData(file);
+
+    apReady = true;
+    syncAPStatus();
+}
+
+async function createFile(hostname, port, player) {
+    const gamesaves = Alpine.store("gamesaves")
+    await disconnectAP();
+
+    try {
+        await connectAP(hostname, port, player);
+    } catch (e) {
+        console.error("Failed to connect to Archipelago");
+        console.error(e);
+
+        return;
+    }
+
+    let slotData = client.data.slotData;
+
+    let newFile = new GameSave( {
+        host: hostname,
+        port: port,
+        player: player,
+        puzzles: slotData.puzzles,
+        baseSeed: slotData.baseSeed,
+    });
+
+    loadFileData(newFile);
+
+    apReady = true;
+    syncAPStatus();
+
+    await newFile.save();
+
+    gamesaves.list.push(newFile);
+    gamesaves.current = newFile;
+}
+
+async function deleteFile(file) {
+    await file.deleteFile();
+    
+    const gamesaves = Alpine.store("gamesaves");
+
+    let index = gamesaves.list.indexOf(file);
+    if (index > -1) {
+        gamesaves.list.splice(index, 1);
+    }
+}
+
+async function loadFileList() {
+    const gamesaves = Alpine.store("gamesaves");
+    gamesaves.list = await getFileList();
+}
+
 async function connectAP(hostname, port, player) {
-    if (client) {
-        apReady = false;
-        console.log("disconnecting from AP...");
-        await client.disconnect();
-    } else {
+    if (!client) {
         client = new Client();
         window.client = client;
     }
@@ -641,17 +722,16 @@ async function connectAP(hostname, port, player) {
         items_handling: ITEMS_HANDLING_FLAGS.REMOTE_ALL,
     };
 
-    try {
-        await client.connect(connectionInfo);
-    } catch (e) {
-        console.log(e)
-        console.error("Couldn't connect")
-        return;
-    }
+    await client.connect(connectionInfo);
 
     console.log("connected to AP");
+}
 
-    let slotData = client.data.slotData;
+/**
+ * 
+ * @param {SaveData.GameSave} file
+ */
+function loadFileData(file) {
     const puzzleList = Alpine.store("puzzleList");
 
     // TODO styling sometimes doesn't update when reconnecting while a puzzle is selected.
@@ -661,18 +741,21 @@ async function connectAP(hostname, port, player) {
     puzzleList.sortedEntries = [];
     puzzleList.selectPuzzle(null);
 
-    let baseSeed = slotData.world_seed;
-
-    for (let i = 0; i < slotData.puzzles.length; i++) {
+    for (let i = 0; i < file.puzzles.length; i++) {
         let options = {locked: true}
 
-        let newEntry = ArchipelagoPuzzle.fromArchipelagoString(slotData.puzzles[i], baseSeed, i+1, options)
+        let newEntry = ArchipelagoPuzzle.fromArchipelagoString(file.puzzles[i], file.baseSeed, i+1, options)
 
         puzzleList.entries.push(newEntry);
     }
+}
 
-    apReady = true;
-    syncAPStatus();
+async function disconnectAP() {
+    if (client) {
+        apReady = false;
+        console.log("disconnecting from AP...");
+        await client.disconnect();
+    }
 }
 
 // Expose UI functions to global scope

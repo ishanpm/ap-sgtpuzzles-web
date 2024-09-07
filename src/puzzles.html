@@ -6,20 +6,43 @@
 </head>
 <body>
     <div class="content">
-        <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
-            <template x-for="entry in sortedEntries" :key="entry.index">
-                <li>
-                    <button tabindex="0"
-                    :class="['puzzle', entry == current ? 'selected' : null, entry.solved ? 'solved' : 'unsolved',
+        <div class="left-pane">
+            <div class="file-selector">
+                <form x-data="$store.connectionInfo" @submit.prevent="connect()">
+                    <label>Host: <input x-model="hostname"></label>
+                    <label>Port: <input x-model="port"></label>
+                    <label>Player: <input x-model="player"></label>
+                    <button type="submit">Connect</button>
+                </form>
+                <ul class="file-list" x-data="$store.gamesaves">
+                    <template x-for="file in list">
+                        <li>
+                            <button @click="loadFile(file)">
+                                <span x-text="file.id"></span>:
+                                <span x-text="file.host"></span>:<span x-text="file.port"></span>
+                                <span x-text="file.player"></span>,
+                                <span x-text="file.puzzles.length"></span> puzzles
+                            </button>
+                            <button @click="deleteFile(file)">X</button>
+                        </li>
+                    </template>
+                </ul>
+            </div>
+            <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
+                <template x-for="entry in sortedEntries" :key="entry.index">
+                    <li>
+                        <button tabindex="0"
+                        :class="['puzzle', entry == current ? 'selected' : null, entry.solved ? 'solved' : 'unsolved',
 entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollected']"
-                    @click="selectPuzzle(entry)"
-                    :disabled="entry.locked && !$store.debugMode">
-                        <span x-text="entry.index"></span>.
-                        <span x-text="entry.desc"></span>
-                    </button>
-                </li>
-            </template>
-        </ul>
+                        @click="selectPuzzle(entry)"
+                        :disabled="entry.locked && !$store.debugMode">
+                            <span x-text="entry.index"></span>.
+                            <span x-text="entry.desc"></span>
+                        </button>
+                    </li>
+                </template>
+            </ul>
+        </div>
         <div class="puzzle-content">
             <div>
                 <label><input type="checkbox" x-data x-model="$store.debugMode"> Debug mode</label>
@@ -36,12 +59,6 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                 <label>ID: <input x-model="id"></label>
                 <label><input x-model="singleMode" type="checkbox"> Single puzzle mode</label>  
                 <button type="submit">Load</button>
-            </form>
-            <form x-data="$store.connectionInfo" @submit.prevent="connect()">
-                <label>Host: <input x-model="hostname"></label>
-                <label>Port: <input x-model="port"></label>
-                <label>Player: <input x-model="player"></label>
-                <button type="submit">Connect</button>
             </form>
             <div>
                 <div>
@@ -61,7 +78,9 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                     </label>
                 </div>
             </div>
-            <iframe src="about:blank" id="puzzleframe" width="500" height="500"></iframe>
+
+            <iframe src="puzzleframe.html" id="puzzleframe" width="500" height="500"></iframe>
+
             <div>
                 <div x-data="$store.status" x-text="message"></div>
                 <template x-data="$store.errorMessage" x-if="visible">
