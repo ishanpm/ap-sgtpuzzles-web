@@ -18,7 +18,6 @@
                     <template x-for="file in list">
                         <li>
                             <button @click="loadFile(file)">
-                                <span x-text="file.id"></span>:
                                 <span x-text="file.host"></span>:<span x-text="file.port"></span>
                                 <span x-text="file.player"></span>,
                                 <span x-text="file.puzzles.length"></span> puzzles

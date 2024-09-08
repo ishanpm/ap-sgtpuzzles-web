@@ -84,7 +84,11 @@ export class GameSave {
 
         let obj = await asPromise(puzzlesave.get([this.id, puzzleId]));
 
-        return obj.data;
+        if (obj) {
+            return obj.data;
+        } else {
+            return null;
+        }
     }
 
     async setPuzzleSave(puzzleId, data) {
