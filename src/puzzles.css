@@ -59,15 +59,15 @@ body {
         color: #b4b4b4;
     }
 
-    &.collected {
+    &.solved {
         background-color: #cfc;
     }
 
-    &.selected.collected {
+    &.selected.solved {
         background-color: rgb(204, 255, 235);
     }
 
-    &.solved {
+    &.collected {
         text-decoration: line-through;
     }
 }

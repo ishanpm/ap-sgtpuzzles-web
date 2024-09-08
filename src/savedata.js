@@ -50,14 +50,9 @@ export class GameSave {
 
         /**
          * Solved status of puzzles.
-         * @type {string[]}
+         * @type {boolean[]}
          */
-        this.puzzleSolved = options.solvedPuzzles ?? Array(this.puzzles.length).fill(false)
-
-        /**
-         * List of IDs of puzzle save files.
-         */
-        this.puzzleSaves = options.solvedPuzzles ?? Array(this.puzzles.length).fill(null);
+        this.puzzleSolved = options.puzzleSolved ?? Array(this.puzzles.length).fill(false)
     }
 
     async save() {

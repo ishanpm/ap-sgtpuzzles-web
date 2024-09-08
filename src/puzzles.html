@@ -62,6 +62,7 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
             <div>
                 <div>
                     <button onclick="showPreferences()">Set preferences</button>
+                    <button onclick="savePuzzleData()">Save</button>
                 </div>
                 <div>
                     <button x-data :style="{display: $store.singleMode ? 'none' : null}" onclick="newPuzzle()">New</button>

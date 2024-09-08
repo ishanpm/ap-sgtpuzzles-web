@@ -183,6 +183,14 @@ function initStores() {
         markSolved() {
             if (this.current) {
                 this.current.onSolve();
+
+                const gamesaves = Alpine.store("gamesaves")
+
+                if (this.current.index && gamesaves.current) {
+                    savePuzzleData();
+                    gamesaves.current.puzzleSolved[this.current.index-1] = true;
+                    gamesaves.current.save();
+                }
             }
         },
         resort() {
@@ -341,7 +349,7 @@ function resetPuzzleMetadata() {
     Alpine.store("errorMessage").dismiss();
 }
 
-function loadPuzzle(genre, id, singleMode) {
+async function loadPuzzle(genre, id, singleMode) {
     let debugLoader = Alpine.store("debugLoader");
     debugLoader.genre = genre;
     debugLoader.id = id;
@@ -351,7 +359,20 @@ function loadPuzzle(genre, id, singleMode) {
 
     const puzzleFrameBase = "puzzleframe.html";
     let queryFragments = [{key: "g", value: genre}];
-    if (id) {
+
+    const gamesaves = Alpine.store("gamesaves");
+
+    let hasSave = false;
+
+    if (gamesaves.current) {
+        let saveData = await gamesaves.current.getPuzzleSave(id);
+        if (saveData) {
+            hasSave = true;
+        }
+    }
+
+    // Don't bother sending ID if save data exists
+    if (id && !hasSave) {
         queryFragments.push({key: "i", value: id});
     }
     if (singleMode) {
@@ -378,7 +399,7 @@ function js_init_puzzle() {
 }
 
 function js_post_init() {
-
+    loadPuzzleData();
 }
 
 function js_enable_undo_redo(enableUndo, enableRedo) {
@@ -476,8 +497,12 @@ function js_error_box(message) {
 
 function savePuzzleDataCallback(data) {
     console.log("Save file ready")
-    console.log(data)
-    window.puzzleSaveData = data;
+    
+    const gamesaves = Alpine.store("gamesaves");
+    const puzzleList = Alpine.store("puzzleList");
+    if (!gamesaves.current || !puzzleList.current) return;
+
+    gamesaves.current.setPuzzleSave(puzzleList.current.index, data)
 }
 
 const messageHandlers = {
@@ -567,8 +592,16 @@ function savePuzzleData() {
     sendMessage("savePuzzleData")
 }
 
-function loadPuzzleData(data) {
-    sendMessage("loadPuzzleData", data)
+async function loadPuzzleData() {
+    const gamesaves = Alpine.store("gamesaves");
+    const puzzleList = Alpine.store("puzzleList");
+    if (!gamesaves.current || !puzzleList.current) return;
+
+    let data = await gamesaves.current.getPuzzleSave(puzzleList.current.index);
+
+    if (data) {
+        sendMessage("loadPuzzleData", data);
+    }
 }
 
 function onReceiveItems(event) {
@@ -742,7 +775,7 @@ function loadFileData(file) {
     puzzleList.selectPuzzle(null);
 
     for (let i = 0; i < file.puzzles.length; i++) {
-        let options = {locked: true}
+        let options = {locked: true, solved: file.puzzleSolved[i]}
 
         let newEntry = ArchipelagoPuzzle.fromArchipelagoString(file.puzzles[i], file.baseSeed, i+1, options)
 
