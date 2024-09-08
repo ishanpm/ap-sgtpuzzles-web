@@ -40,7 +40,7 @@ export class GameSave {
         this.host = options.host ?? "";
         this.port = options.port ?? 0;
         this.player = options.player ?? "";
-        this.baseSeed = options.baseSeed ?? "";
+        this.baseSeed = "" + (options.baseSeed ?? "");
 
         /**
          * List of puzzle parameter strings, as provided by the Archipelago world.
@@ -53,9 +53,17 @@ export class GameSave {
          * @type {boolean[]}
          */
         this.puzzleSolved = options.puzzleSolved ?? Array(this.puzzles.length).fill(false)
+
+        /**
+         * Locked status of puzzles.
+         * @type {boolean[]}
+         */
+        this.puzzleLocked = options.puzzleLocked ?? Array(this.puzzles.length).fill(true)
     }
 
     async save() {
+        if (this.id == -1) return;
+
         const transaction = db.transaction("gamesave", "readwrite");
         const gamesave = transaction.objectStore("gamesave");
 
@@ -74,6 +82,8 @@ export class GameSave {
     }
 
     async getPuzzleSave(puzzleId) {
+        if (this.id == -1) return;
+
         const transaction = db.transaction("puzzlesave");
         const puzzlesave = transaction.objectStore("puzzlesave");
 
@@ -87,6 +97,8 @@ export class GameSave {
     }
 
     async setPuzzleSave(puzzleId, data) {
+        if (this.id == -1) return;
+
         const transaction = db.transaction("puzzlesave", "readwrite");
         const puzzlesave = transaction.objectStore("puzzlesave");
 
@@ -98,6 +110,8 @@ export class GameSave {
     }
 
     async deleteFile() {
+        if (this.id == -1) return;
+
         const transaction = db.transaction(["gamesave","puzzlesave"], "readwrite");
         const gamesave = transaction.objectStore("gamesave");
         const puzzlesave = transaction.objectStore("puzzlesave");
@@ -122,7 +136,16 @@ export class GameSave {
     }
 
     toObject() {
-        return JSON.parse(JSON.stringify(this));
+        return {
+            id: this.id,
+            host: this.host,
+            port: this.port,
+            player: this.player,
+            baseSeed: this.baseSeed,
+            puzzles: this.puzzles.slice(),
+            puzzleSolved: this.puzzleSolved.slice(),
+            puzzleLocked: this.puzzleLocked.slice()
+        };
     }
 
     static fromObject(obj) {

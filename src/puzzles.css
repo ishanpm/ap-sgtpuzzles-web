@@ -24,6 +24,36 @@ body {
     overflow-y: scroll;
 }
 
+.file-selector li {
+    display: flex;
+    flex-direction: row;
+}
+
+.file-selector .file {
+    flex-grow: 1;
+    border: 1px solid gray;
+    border-radius: 2px;
+    cursor: pointer;
+
+    &.selected {
+        background-color: #ccf;
+    }
+
+    &.selected.error {
+        background-color: rgb(255, 233, 204);
+    }
+}
+
+.file-selector .spacer {
+    height: 0.5em;
+}
+
+.file-selector .file-delete {
+    background-color: rgb(255, 161, 161);
+    border: 1px solid black;
+    border-radius: 2px;
+}
+
 .file-list {
     flex-grow: 1;
     margin: 0px;

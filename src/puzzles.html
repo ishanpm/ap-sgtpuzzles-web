@@ -8,21 +8,23 @@
     <div class="content">
         <div class="left-pane">
             <div class="file-selector">
-                <form x-data="$store.connectionInfo" @submit.prevent="connect()">
-                    <label>Host: <input x-model="hostname"></label>
-                    <label>Port: <input x-model="port"></label>
-                    <label>Player: <input x-model="player"></label>
-                    <button type="submit">Connect</button>
+                <form x-data="$store.connectionInfo" @submit.prevent="if (!$store.gamesaves.connecting) connect()">
+                    <label>Host: <input x-model="hostname"></label><br>
+                    <label>Port: <input x-model="port"></label><br>
+                    <label>Player: <input x-model="player"></label><br>
+                    <button type="submit" :disabled="$store.gamesaves.connecting">Connect</button>
                 </form>
+                <div class="spacer"></div>
                 <ul class="file-list" x-data="$store.gamesaves">
                     <template x-for="file in list">
                         <li>
-                            <button @click="loadFile(file)">
+                            <button class="file" :class="[file == current ? 'selected' : null, apError ? 'error' : null]"
+                            @click="loadFile(file)" :disabled="connecting">
                                 <span x-text="file.host"></span>:<span x-text="file.port"></span>
                                 <span x-text="file.player"></span>,
                                 <span x-text="file.puzzles.length"></span> puzzles
                             </button>
-                            <button @click="deleteFile(file)">X</button>
+                            <button class="file-delete" @click="deleteFile(file)" :disabled="connecting">X</button>
                         </li>
                     </template>
                 </ul>

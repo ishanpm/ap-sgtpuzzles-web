@@ -16,7 +16,9 @@ window.onload = function() {
         disableNewGame = true;
     }
 
-    loadPuzzle(genre);
+    if (genre) {
+        loadPuzzle(genre);
+    }
 
     window.parent.postMessage(["ready"]);
 }
