@@ -35,3 +35,9 @@ If you're not running Linux, you can do what the build script does manually:
 - Copy the remaining JS, HTML, and CSS files from `src/` into `dist/`
 - Build the `ap-sgtpuzzles/` directory using Emscripten (good luck lol)
 - Create a `dist/res/` folder and copy the built `.js` and `.wasm` files there
+
+## License
+
+This project is licensed under the MIT license. See LICENSE for more info.
+
+Additionally, this project uses a fork of Simon Tatham's Portable Puzzle Collection. See https://github.com/ishanpm/ap-sgtpuzzles/blob/main/LICENCE (or LICENCE in the ap-sgtpuzzles submodule) for information about the license and the authors of that project.
