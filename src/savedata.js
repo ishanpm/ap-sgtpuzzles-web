@@ -42,6 +42,8 @@ export class GameSave {
         this.player = options.player ?? "";
         this.baseSeed = "" + (options.baseSeed ?? "");
 
+        this.solveTarget = options.solveTarget ?? null;
+
         /**
          * List of puzzle parameter strings, as provided by the Archipelago world.
          * @type {string[]}
@@ -135,6 +137,10 @@ export class GameSave {
         return;
     }
 
+    toString() {
+        return `${this.player} (${this.host}:${this.port}), ${this.puzzles.length} puzzles`;
+    }
+
     toObject() {
         return {
             id: this.id,
@@ -144,7 +150,8 @@ export class GameSave {
             baseSeed: this.baseSeed,
             puzzles: this.puzzles.slice(),
             puzzleSolved: this.puzzleSolved.slice(),
-            puzzleLocked: this.puzzleLocked.slice()
+            puzzleLocked: this.puzzleLocked.slice(),
+            solveTarget: this.solveTarget
         };
     }
 

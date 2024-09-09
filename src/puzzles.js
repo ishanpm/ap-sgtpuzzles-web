@@ -159,6 +159,8 @@ function initStores() {
         sortedEntries: [],
         currentIndex: -1,
         current: null,
+        solveCount: 0,
+        solveTarget: null,
         selectPuzzle(entry) {
             if (!entry) {
                 this.currentIndex = -1;
@@ -207,8 +209,8 @@ function initStores() {
             }
 
             function sortKey(entry) {
-                if (entry.solved || entry.collected) return 2;
-                else if (entry.locked) return 1;
+                if (entry.solved) return 1;
+                else if (entry.locked) return 2;
                 else return 0;
             }
 
@@ -217,6 +219,13 @@ function initStores() {
             sortedEntries.sort((a,b) => compare(sortKey(a), sortKey(b)))
 
             this.sortedEntries = sortedEntries;
+
+            this.solveCount = this.entries.reduce((a,b) => (b.solved ? a+1 : a), 0)
+        },
+        onFinishClick() {
+            if (this.solveTarget !== null && this.solveCount >= this.solveTarget) {
+                client.updateStatus(CLIENT_STATUS.GOAL);
+            }
         }
     })
 
@@ -334,7 +343,10 @@ function initStores() {
             loadFile(file);
         },
         deleteFile(file) {
-            deleteFile(file)
+            // TODO proper confirmation dialog
+            if (confirm(`${file.toString()}: Delete this file?`)) {
+                deleteFile(file)
+            }
         }
     })
 
@@ -674,10 +686,6 @@ function syncAPStatus() {
     if (fileDirty) {
         currentFile.save();
     }
-
-    if (allSolved) {
-        client.updateStatus(CLIENT_STATUS.GOAL);
-    }
 }
 
 async function createFile(hostname, port, player) {
@@ -703,12 +711,13 @@ async function createFile(hostname, port, player) {
 
     let slotData = client.data.slotData;
 
-    let newFile = new GameSave( {
+    let newFile = new GameSave({
         host: hostname,
         port: port,
         player: player,
         puzzles: slotData.puzzles,
         baseSeed: "" + slotData.world_seed,
+        solveTarget: slotData.solve_target
     });
 
     await clearPuzzle();
@@ -788,16 +797,30 @@ async function deleteFile(file) {
     await file.deleteFile();
     
     const gamesaves = Alpine.store("gamesaves");
+    const puzzleList = Alpine.store("puzzleList");
 
     let index = gamesaves.list.indexOf(file);
     if (index > -1) {
         gamesaves.list.splice(index, 1);
+    }
+
+    if (gamesaves.current == file) {
+        // TODO extract this
+        clearPuzzle();
+        gamesaves.current = null;
+        loadFileData(null);
     }
 }
 
 async function loadFileList() {
     const gamesaves = Alpine.store("gamesaves");
     gamesaves.list = await getFileList();
+
+    // let defaultGame = new GameSave({
+    //     puzzles: genres.slice()
+    // })
+
+    // gamesaves.list.unshift(defaultGame)
 }
 
 function onReceiveItems(event) {
@@ -849,13 +872,16 @@ function loadFileData(file) {
     puzzleList.entries = [];
     puzzleList.sortedEntries = [];
     puzzleList.selectPuzzle(null);
+    puzzleList.solveTarget = file?.solveTarget ?? null;
 
-    for (let i = 0; i < file.puzzles.length; i++) {
-        let options = {locked: file.puzzleLocked[i], solved: file.puzzleSolved[i]}
+    if (file) {
+        for (let i = 0; i < file.puzzles.length; i++) {
+            let options = {locked: file.puzzleLocked[i], solved: file.puzzleSolved[i]}
 
-        let newEntry = ArchipelagoPuzzle.fromArchipelagoString(file.puzzles[i], file.baseSeed, i+1, options)
+            let newEntry = ArchipelagoPuzzle.fromArchipelagoString(file.puzzles[i], file.baseSeed, i+1, options)
 
-        puzzleList.entries.push(newEntry);
+            puzzleList.entries.push(newEntry);
+        }
     }
 
     puzzleList.resort();

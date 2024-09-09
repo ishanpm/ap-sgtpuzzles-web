@@ -20,16 +20,20 @@
                         <li>
                             <button class="file" :class="[file == current ? 'selected' : null, apError ? 'error' : null]"
                             @click="loadFile(file)" :disabled="connecting">
-                                <span x-text="file.host"></span>:<span x-text="file.port"></span>
-                                <span x-text="file.player"></span>,
-                                <span x-text="file.puzzles.length"></span> puzzles
-                            </button>
+                                <span x-text="file.toString()"></span>
                             <button class="file-delete" @click="deleteFile(file)" :disabled="connecting">X</button>
                         </li>
                     </template>
                 </ul>
             </div>
             <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
+                <template x-if="solveTarget !== null">
+                    <li>
+                        <button class="puzzle finish-button" :disabled="solveCount &lt; solveTarget" @click="onFinishClick()">
+                            Finish (<span x-text="solveCount"></span> of <span x-text="solveTarget"></span> solved)
+                        </button>
+                    </li>
+                </template>
                 <template x-for="entry in sortedEntries" :key="entry.index">
                     <li>
                         <button tabindex="0"
