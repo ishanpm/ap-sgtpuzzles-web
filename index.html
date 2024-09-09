@@ -98,14 +98,6 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                     ID: <label x-data x-text="$store.puzzleState.gameId"></label>
                 </div>
                 <template x-data x-if="!$store.singleMode">
-                    <div>
-                        <input id="puzzle-id">
-                        <button>Get Seed</button>
-                        <button>Get ID</button>
-                        <button>Set ID/Seed</button>
-                    </div>
-                </template>
-                <template x-data x-if="!$store.singleMode">
                     <ul role="menu">
                         <template x-for="preset in $store.puzzlePresets">
                             <li>
