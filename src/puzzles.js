@@ -8,7 +8,7 @@ const {GameSave, getFile, getFileList, openDatabase} = SaveData;
 
 const genres = [
     "blackbox","bridges","cube","dominosa","fifteen","filling","flip","flood","galaxies",
-    "guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
+    "group","guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
     "netslide","palisade","pattern","pearl","pegs","range","rect","samegame","signpost",
     "singles","sixteen","slant","solo","tents","towers","tracks","twiddle","undead",
     "unequal","unruly","untangle"
@@ -155,7 +155,7 @@ function onInit() {
 function initStores() {
     // List of available puzzles from Archipelago
     Alpine.store("puzzleList", {
-        entries: genres.map((genre,i) => ArchipelagoPuzzle.fromPuzzlesString(genre, "", i+1)),
+        entries: genres.filter(e => e != "group").map((genre,i) => ArchipelagoPuzzle.fromPuzzlesString(genre, "", i+1)),
         sortedEntries: [],
         currentIndex: -1,
         current: null,
