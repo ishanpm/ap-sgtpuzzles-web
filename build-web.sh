@@ -1,5 +1,5 @@
 #!/bin/sh
 
 echo "Running webpack"
-webpack
+webpack --config webpack.dev.js
 ./copy-web-files.sh
