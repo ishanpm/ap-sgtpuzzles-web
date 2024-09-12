@@ -29,7 +29,7 @@
             <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
                 <template x-if="solveTarget !== null">
                     <li>
-                        <button class="puzzle finish-button" :disabled="solveCount &lt; solveTarget" @click="onFinishClick()">
+                        <button class="puzzle finish-button" :class="{solved: finished}" :disabled="solveCount &lt; solveTarget" @click="onFinishClick()">
                             Finish (<span x-text="solveCount"></span> of <span x-text="solveTarget"></span> solved)
                         </button>
                     </li>
@@ -49,6 +49,9 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
             </ul>
         </div>
         <div class="puzzle-content">
+            <div>
+                <label><input type="checkbox" x-data x-model="$store.debugMode"> Debug mode</label>
+            </div>
             <form x-data="$store.debugLoader" @submit.prevent="load()" :style="{display: $store.debugMode ? null : 'none'}">
                 <label>
                     Genre:
@@ -97,6 +100,14 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                     <br>
                     ID: <label x-data x-text="$store.puzzleState.gameId"></label>
                 </div>
+                <template x-data x-if="!$store.singleMode">
+                    <div>
+                        <input id="puzzle-id">
+                        <button>Get Seed</button>
+                        <button>Get ID</button>
+                        <button>Set ID/Seed</button>
+                    </div>
+                </template>
                 <template x-data x-if="!$store.singleMode">
                     <ul role="menu">
                         <template x-for="preset in $store.puzzlePresets">
