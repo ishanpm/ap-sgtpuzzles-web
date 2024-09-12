@@ -42,6 +42,8 @@ export class GameSave {
         this.player = options.player ?? "";
         this.baseSeed = "" + (options.baseSeed ?? "");
 
+        this.finished = options.finished ?? false;
+
         this.solveTarget = options.solveTarget ?? null;
 
         /**
@@ -148,6 +150,7 @@ export class GameSave {
             port: this.port,
             player: this.player,
             baseSeed: this.baseSeed,
+            finished: this.finished,
             puzzles: this.puzzles.slice(),
             puzzleSolved: this.puzzleSolved.slice(),
             puzzleLocked: this.puzzleLocked.slice(),

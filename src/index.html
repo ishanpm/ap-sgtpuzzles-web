@@ -29,7 +29,7 @@
             <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
                 <template x-if="solveTarget !== null">
                     <li>
-                        <button class="puzzle finish-button" :disabled="solveCount &lt; solveTarget" @click="onFinishClick()">
+                        <button class="puzzle finish-button" :class="{solved: finished}" :disabled="solveCount &lt; solveTarget" @click="onFinishClick()">
                             Finish (<span x-text="solveCount"></span> of <span x-text="solveTarget"></span> solved)
                         </button>
                     </li>

@@ -161,6 +161,7 @@ function initStores() {
         current: null,
         solveCount: 0,
         solveTarget: null,
+        finished: false,
         selectPuzzle(entry) {
             if (!entry) {
                 this.currentIndex = -1;
@@ -225,6 +226,8 @@ function initStores() {
         onFinishClick() {
             if (this.solveTarget !== null && this.solveCount >= this.solveTarget) {
                 client.updateStatus(CLIENT_STATUS.GOAL);
+                this.finished = true;
+                Alpine.store("gamesaves").markFinished();
             }
         }
     })
@@ -346,6 +349,12 @@ function initStores() {
             // TODO proper confirmation dialog
             if (confirm(`${file.toString()}: Delete this file?`)) {
                 deleteFile(file)
+            }
+        },
+        markFinished() {
+            if (this.current) {
+                this.current.finished = true;
+                this.current.save();
             }
         }
     })
@@ -873,6 +882,7 @@ function loadFileData(file) {
     puzzleList.sortedEntries = [];
     puzzleList.selectPuzzle(null);
     puzzleList.solveTarget = file?.solveTarget ?? null;
+    puzzleList.finished = file.finished;
 
     if (file) {
         for (let i = 0; i < file.puzzles.length; i++) {
