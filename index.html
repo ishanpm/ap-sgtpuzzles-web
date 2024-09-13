@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="puzzles.css">
     <script src="puzzles.js" type="module"></script>
 </head>
@@ -49,6 +50,9 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
             </ul>
         </div>
         <div class="puzzle-content">
+            <div>
+                <label><input type="checkbox" x-data x-model="$store.debugMode"> Debug mode</label>
+            </div>
             <form x-data="$store.debugLoader" @submit.prevent="load()" :style="{display: $store.debugMode ? null : 'none'}">
                 <label>
                     Genre:
