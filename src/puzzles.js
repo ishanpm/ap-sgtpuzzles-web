@@ -5,6 +5,7 @@ const {
 const Alpine = require('alpinejs').default;
 const SaveData = require("./savedata.js");
 const {GameSave, getFile, getFileList, openDatabase} = SaveData;
+const {config} = require("config")
 
 const genres = [
     "blackbox","bridges","cube","dominosa","fifteen","filling","flip","flood","galaxies",
@@ -360,6 +361,8 @@ function initStores() {
     })
 
     Alpine.store("genres", genres)
+
+    Alpine.store("config", config)
 
     resetPuzzleMetadata();
 }

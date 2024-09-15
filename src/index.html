@@ -50,9 +50,11 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
             </ul>
         </div>
         <div class="puzzle-content">
-            <div>
-                <label><input type="checkbox" x-data x-model="$store.debugMode"> Debug mode</label>
-            </div>
+            <template x-data x-if="$store.config.enableDebug">
+                <div>
+                    <label><input type="checkbox" x-model="$store.debugMode"> Debug mode</label>
+                </div>
+            </template>
             <form x-data="$store.debugLoader" @submit.prevent="load()" :style="{display: $store.debugMode ? null : 'none'}">
                 <label>
                     Genre:
