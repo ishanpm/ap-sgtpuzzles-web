@@ -73,10 +73,12 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
             </form>
             <div x-data>
                 <div>
-                    <button onclick="showPreferences()" :disabled="!$store.puzzleState.loaded">
-                        Puzzle preferences
+                    <button onclick="showPreferences()" :style="{display: $store.puzzleState.genre ? null : 'none'}"
+                    :disabled="!$store.puzzleState.loaded">
+                        Preferences for <span x-text="$store.puzzleState.genreInfo.name"></span>...
                     </button>
-                    <button onclick="savePuzzleData()" :disabled="!$store.puzzleState.loaded">Save puzzle</button>
+                    <button onclick="savePuzzleData()" :style="{display: $store.singleMode ? null : 'none'}"
+                    :disabled="!$store.puzzleState.loaded">Save puzzle progress</button>
                 </div>
                 <div>
                     <button :style="{display: $store.singleMode ? 'none' : null}" :disabled="!$store.puzzleState.loaded" onclick="newPuzzle()">New</button>
@@ -130,13 +132,11 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                     <br>
                     ID: <label x-data x-text="$store.puzzleState.gameId"></label>
                 </div>
-                <template x-data x-if="false">
-                    <div>
-                        <input>
-                        <button>Get Seed</button>
-                        <button>Get ID</button>
-                        <button>Set ID/Seed</button>
-                    </div>
+                <template x-data="{puzzleId: ''}" x-if="false">
+                    <form @submit.prevent="">
+                        <input x-model="puzzleId">
+                        <button type="submit">Load ID/Seed</button>
+                    </form>
                 </template>
                 <hr>
                 <template x-data x-if="!$store.singleMode">
