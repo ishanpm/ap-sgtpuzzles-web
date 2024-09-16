@@ -31,10 +31,11 @@ npm install
 
 If you're not running Linux, you can do what the build script does manually:
 
-- Build the JS bundle using `webpack`. This will create a `dist/` folder
+- Build the JS bundle using `webpack --config webpack.dev.js`. This will create a `dist/` folder
 - Copy the remaining JS, HTML, and CSS files from `src/` into `dist/`
 - Build the `ap-sgtpuzzles/` directory using Emscripten (good luck lol)
 - Create a `dist/res/` folder and copy the built `.js` and `.wasm` files there
+- Copy the built `help/` folder to `dist/help/`
 
 ## License
 
