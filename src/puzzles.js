@@ -846,7 +846,7 @@ async function loadFileList() {
     let defaultGame = new GameSave({
         id: -1,
         filename: "Freeplay",
-        puzzles: genres.slice(),
+        puzzles: genres.filter(e => !genreInfo[e].hidden),
         puzzleLocked: genres.map(e => false)
     });
 
