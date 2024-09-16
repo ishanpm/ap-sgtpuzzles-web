@@ -6,14 +6,7 @@ const Alpine = require('alpinejs').default;
 const SaveData = require("./savedata.js");
 const {GameSave, getFile, getFileList, openDatabase} = SaveData;
 const {config} = require("config")
-
-const genres = [
-    "blackbox","bridges","cube","dominosa","fifteen","filling","flip","flood","galaxies",
-    "group","guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
-    "netslide","palisade","pattern","pearl","pegs","range","rect","samegame","signpost",
-    "singles","sixteen","slant","solo","tents","towers","tracks","twiddle","undead",
-    "unequal","unruly","untangle"
-]
+const {genres, genreInfo} = require("./genres.js")
 
 document.addEventListener("alpine:init", onInit)
 
@@ -56,7 +49,13 @@ class ArchipelagoPuzzle {
     }
 
     updateDescription() {
-        this.desc = `${this.genre}: ${this.params}`;
+        let name = genreInfo[this.genre].name;
+
+        if (this.params) {
+            this.desc = `${name}: ${this.params}`;
+        } else {
+            this.desc = name;
+        }
     }
 
     updateState() {
@@ -156,13 +155,14 @@ function onInit() {
 function initStores() {
     // List of available puzzles from Archipelago
     Alpine.store("puzzleList", {
-        entries: genres.filter(e => e != "group").map((genre,i) => ArchipelagoPuzzle.fromPuzzlesString(genre, "", i+1)),
+        entries: [],
         sortedEntries: [],
         currentIndex: -1,
         current: null,
         solveCount: 0,
         solveTarget: null,
         finished: false,
+        sortBySolved: false,
         selectPuzzle(entry) {
             if (!entry) {
                 this.currentIndex = -1;
@@ -218,7 +218,11 @@ function initStores() {
 
             var sortedEntries = this.entries.slice();
             
-            sortedEntries.sort((a,b) => compare(sortKey(a), sortKey(b)))
+            if (this.sortBySolved) {
+                sortedEntries.sort((a,b) => compare(sortKey(a), sortKey(b)) || compare(a.id, b.id))
+            } else {
+                sortedEntries.sort((a,b) => compare(a.id, b.id))
+            }
 
             this.sortedEntries = sortedEntries;
 
@@ -245,8 +249,11 @@ function initStores() {
         solveEnabled: true,
         primaryKeyLabel: "",
         secondaryKeyLabel: "",
+        loaded: false,
         solved: false,
         status: 0,
+        genre: null,
+        genreInfo: genreInfo["none"],
         gameId: "",
         gameSeed: "",
         reset() {
@@ -256,7 +263,11 @@ function initStores() {
             this.solveEnabled = true;
             this.primaryKeyLabel = "";
             this.secondaryKeyLabel = "";
+            this.loaded = false;
+            this.solved = false;
             this.status = 0;
+            this.genre = null;
+            this.genreInfo = genreInfo["none"];
             this.gameId = "";
             this.gameSeed = "";
         }
@@ -380,15 +391,19 @@ function resetPuzzleMetadata() {
 
 async function loadPuzzle(genre, id, singleMode) {
     let debugLoader = Alpine.store("debugLoader");
+    let puzzleState = Alpine.store("puzzleState");
 
     if (!genre) {
         id = undefined;
         singleMode = true;
     }
 
+    resetPuzzleMetadata();
     debugLoader.genre = genre;
     debugLoader.id = id;
     debugLoader.singleMode = !!singleMode;
+    puzzleState.genre = genre;
+    puzzleState.genreInfo = genreInfo[genre || "none"];
 
     Alpine.store("singleMode", !!singleMode)
 
@@ -434,7 +449,6 @@ async function clearPuzzle() {
 
 function onPuzzleFrameLoad() {
     console.log("puzzles.html: puzzleframe ready")
-    resetPuzzleMetadata();
 }
 
 function js_init_puzzle() {
@@ -443,6 +457,7 @@ function js_init_puzzle() {
 
 function js_post_init() {
     loadPuzzleData();
+    Alpine.store("puzzleState").loaded = true;
 }
 
 function js_enable_undo_redo(enableUndo, enableRedo) {
@@ -828,11 +843,16 @@ async function loadFileList() {
     const gamesaves = Alpine.store("gamesaves");
     gamesaves.list = await getFileList();
 
-    // let defaultGame = new GameSave({
-    //     puzzles: genres.slice()
-    // })
+    let defaultGame = new GameSave({
+        id: -1,
+        filename: "Freeplay",
+        puzzles: genres.slice(),
+        puzzleLocked: genres.map(e => false)
+    });
 
-    // gamesaves.list.unshift(defaultGame)
+    gamesaves.list.unshift(defaultGame);
+
+    gamesaves.loadFile(defaultGame);
 }
 
 function onReceiveItems(event) {
@@ -878,6 +898,8 @@ async function connectAP(hostname, port, player) {
 function loadFileData(file) {
     const puzzleList = Alpine.store("puzzleList");
 
+    let isFreeplay = (file.id < 0);
+
     // TODO styling sometimes doesn't update when reconnecting while a puzzle is selected.
     // Seems like a bug with Alpine (or with how I'm using it), I'll probably have to switch to a different
     // UI/reactivity library
@@ -886,12 +908,18 @@ function loadFileData(file) {
     puzzleList.selectPuzzle(null);
     puzzleList.solveTarget = file?.solveTarget ?? null;
     puzzleList.finished = file.finished;
+    puzzleList.sortBySolved = !isFreeplay;
 
     if (file) {
         for (let i = 0; i < file.puzzles.length; i++) {
             let options = {locked: file.puzzleLocked[i], solved: file.puzzleSolved[i]}
 
-            let newEntry = ArchipelagoPuzzle.fromArchipelagoString(file.puzzles[i], file.baseSeed, i+1, options)
+            let newEntry;
+            if (isFreeplay) {
+                newEntry = ArchipelagoPuzzle.fromPuzzlesString(file.puzzles[i], null, i+1)
+            } else {
+                newEntry = ArchipelagoPuzzle.fromArchipelagoString(file.puzzles[i], file.baseSeed, i+1, options)
+            }
 
             puzzleList.entries.push(newEntry);
         }

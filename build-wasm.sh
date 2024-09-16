@@ -16,3 +16,6 @@ cp -f ap-sgtpuzzles/build-emscripten/*.js dist/res
 cp -f ap-sgtpuzzles/build-emscripten/*.wasm dist/res
 cp -f ap-sgtpuzzles/build-emscripten/unfinished/*.js dist/res
 cp -f ap-sgtpuzzles/build-emscripten/unfinished/*.wasm dist/res
+
+mkdir -p dist/help
+cp -rf ap-sgtpuzzles/build-emscripten/help/. dist/help/

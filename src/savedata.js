@@ -37,6 +37,7 @@ export class GameSave {
         options ??= {};
 
         this.id = options.id ?? null;
+        this.filename = options.filename ?? null;
         this.host = options.host ?? "";
         this.port = options.port ?? 0;
         this.player = options.player ?? "";
@@ -140,12 +141,13 @@ export class GameSave {
     }
 
     toString() {
-        return `${this.player} (${this.host}:${this.port}), ${this.puzzles.length} puzzles`;
+        return this.filename ?? `${this.player} (${this.host}:${this.port}), ${this.puzzles.length} puzzles`;
     }
 
     toObject() {
         return {
             id: this.id,
+            fliename: this.filename,
             host: this.host,
             port: this.port,
             player: this.player,
