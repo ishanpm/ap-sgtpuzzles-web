@@ -22,7 +22,10 @@
                             <button class="file" :class="[file == current ? 'selected' : null, apError ? 'error' : null]"
                             @click="loadFile(file)" :disabled="connecting">
                                 <span x-text="file.toString()"></span>
-                            <button class="file-delete" @click="deleteFile(file)" :disabled="connecting">X</button>
+                            </button>
+                            <template x-if="file.id > -1">
+                                <button class="file-delete" @click="deleteFile(file)" :disabled="connecting">X</button>
+                            </template>
                         </li>
                     </template>
                 </ul>
@@ -50,6 +53,11 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
             </ul>
         </div>
         <div class="puzzle-content">
+            <template x-data x-if="$store.config.enableDebug">
+                <div>
+                    <label><input type="checkbox" x-model="$store.debugMode"> Debug mode</label>
+                </div>
+            </template>
             <form x-data="$store.debugLoader" @submit.prevent="load()" :style="{display: $store.debugMode ? null : 'none'}">
                 <label>
                     Genre:
@@ -63,23 +71,24 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                 <label><input x-model="singleMode" type="checkbox"> Single puzzle mode</label>  
                 <button type="submit">Load</button>
             </form>
-            <div>
+            <div x-data>
                 <div>
-                    <button onclick="showPreferences()">Set preferences</button>
-                    <button onclick="savePuzzleData()">Save</button>
+                    <button onclick="showPreferences()" :style="{display: $store.puzzleState.genre ? null : 'none'}"
+                    :disabled="!$store.puzzleState.loaded">
+                        Preferences for <span x-text="$store.puzzleState.genreInfo.name"></span>...
+                    </button>
+                    <button onclick="savePuzzleData()" :style="{display: $store.singleMode ? null : 'none'}"
+                    :disabled="!$store.puzzleState.loaded">Save puzzle progress</button>
                 </div>
                 <div>
-                    <button x-data :style="{display: $store.singleMode ? 'none' : null}" onclick="newPuzzle()">New</button>
-                    <button onclick="restartPuzzle()">Restart</button>
-                    <button x-data onclick="undoPuzzle()" :disabled="!$store.puzzleState.undoEnabled">Undo</button>
-                    <button x-data onclick="redoPuzzle()" :disabled="!$store.puzzleState.redoEnabled">Redo</button>
-                    <button x-data :style="{display: ($store.singleMode && !$store.debugMode) ? 'none' : null}" onclick="solvePuzzle()"
-                    x-text="$store.puzzleState.solveEnabled ? 'Solve' : 'Skip'">
+                    <button :style="{display: $store.singleMode ? 'none' : null}" :disabled="!$store.puzzleState.loaded" onclick="newPuzzle()">New</button>
+                    <button onclick="restartPuzzle()" :disabled="!$store.puzzleState.loaded">Restart</button>
+                    <button onclick="undoPuzzle()" :disabled="!$store.puzzleState.undoEnabled">Undo</button>
+                    <button onclick="redoPuzzle()" :disabled="!$store.puzzleState.redoEnabled">Redo</button>
+                    <button :style="{display: ($store.singleMode && !$store.debugMode) ? 'none' : null}" onclick="solvePuzzle()"
+                    x-text="$store.puzzleState.solveEnabled ? 'Solve' : 'Skip'" :disabled="!$store.puzzleState.loaded">
                         Solve
                     </button>
-                    <label>Solved?
-                        <span x-data x-text="$store.puzzleState.solved ? 'yes' : 'no'">(uninitialized)</span>
-                    </label>
                 </div>
             </div>
 
@@ -93,19 +102,43 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                         <button @click="dismiss">OK</button>
                     </div>
                 </template>
+                <hr>
+                <template x-data x-if="$store.puzzleState.genreInfo">
+                    <div>
+                        <h2 x-text="$store.puzzleState.genreInfo.name"></h2>
+                        <p x-text="$store.puzzleState.genreInfo.description"></p>
+                        <template x-if="$store.puzzleState.genreInfo.rules">
+                            <div>
+                                <p>Rules summary:</p>
+                                <ul>
+                                    <template x-for="line in $store.puzzleState.genreInfo.rules">
+                                        <li x-text="line"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                        </template>
+                        <template x-if="$store.puzzleState.genreInfo.helpLink !== ''">
+                            <p>
+                                <a target="_blank" :href="$store.puzzleState.genreInfo.helpLink ?? ('help/en/' + $store.puzzleState.genre + '.html')">
+                                    Full rules for <span x-text="$store.puzzleState.genreInfo.name"></span>
+                                </a>
+                            </p>
+                        </template>
+                    </div>
+                </template>
+                <hr>
                 <div style="overflow: auto; word-break: break-word;">
                     Seed: <label x-data x-text="$store.puzzleState.gameSeed"></label>
                     <br>
                     ID: <label x-data x-text="$store.puzzleState.gameId"></label>
                 </div>
-                <template x-data x-if="!$store.singleMode">
-                    <div>
-                        <input id="puzzle-id">
-                        <button>Get Seed</button>
-                        <button>Get ID</button>
-                        <button>Set ID/Seed</button>
-                    </div>
+                <template x-data="{puzzleId: ''}" x-if="false">
+                    <form @submit.prevent="">
+                        <input x-model="puzzleId">
+                        <button type="submit">Load ID/Seed</button>
+                    </form>
                 </template>
+                <hr>
                 <template x-data x-if="!$store.singleMode">
                     <ul role="menu">
                         <template x-for="preset in $store.puzzlePresets">
@@ -118,7 +151,6 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                         </template>
                     </ul>
                 </template>
-                <hr>
                 <template x-data="$store.puzzleDialog" x-if="visible">
                     <div class="dialog-container">
                         <div class="puzzle-dialog">
