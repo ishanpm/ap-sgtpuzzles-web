@@ -37,7 +37,7 @@ export const genres = [
  * @typedef {Object} GenreInfoEntry
  * @property {string} name
  * @property {string} [description]
- * @property {string} [helpLink] Link to the help page for this puzzle. If undefined, defaults to the empty string. If 
+ * @property {string} [helpLink] Link to the help page for this puzzle. If undefined, defaults to the empty string. 
  * @property {string[]} [rules]
  * @property {any} [controls]
  * @property {ParameterFormat} [params]
@@ -69,7 +69,7 @@ export const genreInfo = {
     },
     "bridges": {
         name: "Bridges",
-        description: "Connect the islands with the indicated number bridges."
+        description: "Connect the islands with the indicated number of bridges."
     },
     "cube": {
         name: "Cube",
@@ -228,7 +228,7 @@ export const genreInfo = {
     },
     "towers": {
         name: "Towers",
-        description: "Place towers so that the right number can be seen from outside."
+        description: "Place towers so that the right amount can be seen from outside."
     },
     "tracks": {
         name: "Tracks",
