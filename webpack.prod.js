@@ -6,7 +6,7 @@ module.exports = {
   mode: 'production',
   resolve: {
     alias: {
-      config: path.join(__dirname, 'src', 'config-prod.js')
+      config: path.join(__dirname, 'config', 'config-prod.js')
     }
   },
   output: {

@@ -119,8 +119,6 @@ const messageHandlers = {
 }
 
 function processMessage(message) {
-    console.log("to puzzleframe.html:", message.data)
-
     if (!message.data[Symbol.iterator]) return;
 
     let [command, ...args] = message.data
