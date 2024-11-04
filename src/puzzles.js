@@ -74,7 +74,7 @@ class ArchipelagoPuzzle {
 
         // TODO should probably extract this somewhere
         if (apReady) {
-            let locationId = this.index - 1 + 925000;
+            let locationId = locationNameToId(`Puzzle ${this.index} Reward`);
 
             client.locations.check(locationId);
         }
@@ -686,8 +686,8 @@ function syncAPStatus() {
 
     for (let entry of puzzleList.entries) {
         let dirty = false;
-        let itemId = entry.index - 1 + 925000;
-        let locationId = itemId;
+        let itemId = itemNameToId(`Puzzle ${entry.index}`);
+        let locationId = locationNameToId(`Puzzle ${entry.index} Reward`);
 
         if (!entry.collected && client.locations.checked.includes(locationId)) {
             entry.collected = true;
@@ -892,6 +892,22 @@ async function connectAP(hostname, port, player) {
     await client.connect(connectionInfo);
 
     console.log("connected to AP");
+}
+
+function itemIdToName(id) {
+    return client.data.package.get("Simon Tatham's Portable Puzzle Collection").item_id_to_name[id]
+}
+
+function itemNameToId(name) {
+    return client.data.package.get("Simon Tatham's Portable Puzzle Collection").item_name_to_id[name]
+}
+
+function locationIdToName(id) {
+    return client.data.package.get("Simon Tatham's Portable Puzzle Collection").location_id_to_name[id]
+}
+
+function locationNameToId(name) {
+    return client.data.package.get("Simon Tatham's Portable Puzzle Collection").location_name_to_id[name]
 }
 
 /**
