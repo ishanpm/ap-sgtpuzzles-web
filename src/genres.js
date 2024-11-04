@@ -276,7 +276,13 @@ export const genreInfo = {
     },
     "unequal": {
         name: "Unequal",
-        description: "Fill in numbers so that the inequality signs are satisfied."
+        description: "Fill in numbers so that the inequality signs are satisfied.",
+        rules: [
+            "Each row and column contains the numbers from 1 to the grid size exactly once.",
+            "Cells separated by a greater than or less than sign must satisfy that inequality.",
+            "If there are grey bars, numbers separated by grey bars must have a difference of 1.",
+            "If there are grey bars, numbers not separated by grey bars must have a difference of more than 1."
+        ]
     },
     "unruly": {
         name: "Unruly",
