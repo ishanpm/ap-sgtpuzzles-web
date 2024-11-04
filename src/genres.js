@@ -132,7 +132,13 @@ export const genreInfo = {
     },
     "keen": {
         name: "Keen",
-        description: "Fill in numbers to satisfy mathematical operations."
+        description: "Fill in numbers to satisfy mathematical operations.",
+        rules: [
+            "Each row and column contains the numbers from 1 to the grid size exactly once.",
+            "Each region's numbers, when combined with the indicated operation, must form the indicated value.",
+            "If the operation is not specified, the numbers are combined using multiplication.",
+            "Regions can contain the same number multiple times."
+        ]
     },
     "lightup": {
         name: "Lightup",
@@ -227,11 +233,22 @@ export const genreInfo = {
     },
     "solo": {
         name: "Solo",
-        description: "Fill in numbers so there are no duplicates in a row, column, or block."
+        description: "Fill in numbers so there are no duplicates in a row, column, or block.",
+        rules: [
+            "Each row, column, and block contains the numbers from 1 to the grid size exactly once.",
+            "If the diagonals are shaded, numbers must not repeat along a diagonal. (X Sudoku)",
+            "Cages with thin outlines, if present, must sum to the indicated value. Numbers cannot repeat within a cage. (Killer Sudoku)"
+        ]
     },
     "tents": {
         name: "Tents",
-        description: "Place a tent next to each tree so that none of them touch."
+        description: "Place a tent next to each tree so that none of them touch.",
+        rules: [
+            "Each tree must be next to its own tent, and each tent must be next to its own tree.",
+            "A tent can be next to multiple trees, but it must be possible to pair the tents and trees without overlaps.",
+            "Tents cannot be adjacent, not even diagonally.",
+            "Clues indicate the number of tents in a row or column"
+        ]
     },
     "towers": {
         name: "Towers",
