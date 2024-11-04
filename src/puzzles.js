@@ -340,7 +340,7 @@ function initStores() {
     })
 
     Alpine.store("connectionInfo", {
-        hostname: "localhost",
+        hostname: config.defaultHost,
         port: "38281",
         player: "Player1",
         connect() {
@@ -354,8 +354,8 @@ function initStores() {
         current: null,
         apError: false,
         connecting: false,
-        loadFile(file) {
-            loadFile(file);
+        loadFile(file, secretMode) {
+            loadFile(file, secretMode);
         },
         deleteFile(file) {
             // TODO proper confirmation dialog
@@ -437,6 +437,8 @@ async function loadPuzzle(genre, id, singleMode) {
 
     puzzleframe.src = null;
     puzzleframe.src = `${puzzleFrameBase}?${queryString}`;
+    puzzleframe.width = 0;
+    puzzleframe.height = 0;
 }
 
 async function clearPuzzle() {
@@ -542,7 +544,8 @@ function js_canvas_remove_statusbar() {
 }
 
 function js_canvas_set_size(w, h) {
-
+    puzzleframe.width = w;
+    puzzleframe.height = h;
 }
 
 function js_focus_canvas() {
@@ -730,7 +733,7 @@ async function createFile(hostname, port, player) {
         console.error("Couldn't connect to Archipelago server");
         console.error(e);
 
-        gamesaves.apError = true;
+        //gamesaves.apError = true;
         gamesaves.connecting = false;
 
         return;
@@ -764,7 +767,7 @@ async function createFile(hostname, port, player) {
  * 
  * @param {SaveData.GameSave} file 
  */
-async function loadFile(file) {
+async function loadFile(file, secretMode) {
     const gamesaves = Alpine.store("gamesaves")
     gamesaves.connecting = true;
     gamesaves.current = file;
@@ -810,7 +813,7 @@ async function loadFile(file) {
 
     await clearPuzzle();
 
-    loadFileData(file);
+    loadFileData(file, secretMode);
 
     if (connectOk) {
         apReady = true;
@@ -846,7 +849,7 @@ async function loadFileList() {
     let defaultGame = new GameSave({
         id: -1,
         filename: "Freeplay",
-        puzzles: genres.filter(e => !genreInfo[e].hidden),
+        puzzles: genres.filter(e => true),
         puzzleLocked: genres.map(e => false)
     });
 
@@ -895,8 +898,12 @@ async function connectAP(hostname, port, player) {
  * 
  * @param {SaveData.GameSave} file
  */
-function loadFileData(file) {
+function loadFileData(file, secretMode) {
     const puzzleList = Alpine.store("puzzleList");
+
+    if (secretMode) {
+        console.log("waow")
+    }
 
     let isFreeplay = (file.id < 0);
 
@@ -910,19 +917,22 @@ function loadFileData(file) {
     puzzleList.finished = file.finished;
     puzzleList.sortBySolved = !isFreeplay;
 
-    if (file) {
-        for (let i = 0; i < file.puzzles.length; i++) {
-            let options = {locked: file.puzzleLocked[i], solved: file.puzzleSolved[i]}
+    for (let i = 0; i < file.puzzles.length; i++) {
+        let options = {locked: file.puzzleLocked[i], solved: file.puzzleSolved[i]}
 
-            let newEntry;
-            if (isFreeplay) {
-                newEntry = ArchipelagoPuzzle.fromPuzzlesString(file.puzzles[i], null, i+1)
-            } else {
-                newEntry = ArchipelagoPuzzle.fromArchipelagoString(file.puzzles[i], file.baseSeed, i+1, options)
+        let newEntry;
+        if (isFreeplay) {
+            newEntry = ArchipelagoPuzzle.fromPuzzlesString(file.puzzles[i], null, i+1)
+
+            if (genreInfo[newEntry.genre].hidden && !secretMode) {
+                // Skip hidden genres
+                continue;
             }
-
-            puzzleList.entries.push(newEntry);
+        } else {
+            newEntry = ArchipelagoPuzzle.fromArchipelagoString(file.puzzles[i], file.baseSeed, i+1, options)
         }
+
+        puzzleList.entries.push(newEntry);
     }
 
     puzzleList.resort();

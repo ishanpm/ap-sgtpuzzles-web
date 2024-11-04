@@ -144,7 +144,7 @@ function sendMessage(command, ...args) {
 }
 
 function setBackgroundColor(colorString) {
-    document.getElementById("puzzlecanvascontain").style.backgroundColor = colorString
+    document.getElementById("puzzle").style.backgroundColor = colorString
 }
 
 function onSolve() {

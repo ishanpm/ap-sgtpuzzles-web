@@ -4,10 +4,10 @@
  */
 export const genres = [
     "blackbox","bridges","cube","dominosa","fifteen","filling","flip","flood","galaxies",
-    "group","guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
+    "guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
     "netslide","palisade","pattern","pearl","pegs","range","rect","samegame","signpost",
     "singles","sixteen","slant","solo","tents","towers","tracks","twiddle","undead",
-    "unequal","unruly","untangle"
+    "unequal","unruly","untangle","group"
 ];
 
 /**
@@ -69,7 +69,12 @@ export const genreInfo = {
     },
     "bridges": {
         name: "Bridges",
-        description: "Connect the islands with the indicated number of bridges."
+        description: "Connect the islands with the indicated number of bridges.",
+        rules: [
+            "The total number of bridges extending from an island must equal the island's number.",
+            "There are at most 2 bridges between any two islands.",
+            "All islands are connected by bridges. (There may be loops.)"
+        ]
     },
     "cube": {
         name: "Cube",
@@ -101,14 +106,16 @@ export const genreInfo = {
     },
     "group": {
         name: "Group",
-        description: "Fill in the Cayley table for a finite group.",
+        description: "Fill in the <a href='https://en.wikipedia.org/wiki/Cayley_table'>Cayley table</a> for a finite group.",
         hidden: true,
         helpLink: "",
         rules: [
+            "In this summary, the letter at row x and column y is notated (xy).",
             "Every letter appears exactly once in each row and column.",
-            "The letter at row x and column y is notated (xy).",
-            "For any letters x, y, and z, ((xy)z) and (x(yz)) are the same.",
-            "There is some letter e for which, for any x, (ex) and (xe) are both x."
+            "For any letters x, y, and z, ((xy)z) and (x(yz)) are the same. (Associativity law)",
+            "There is some letter e where, for all x, (ex) and (xe) are both x. (Identity law)",
+            "For each letter x, there is some letter y for which (xy) and (yx) are both e, as defined in the identity law. (Inverses law)",
+            "(Note: This puzzle is unfinished. See <a href='https://www.chiark.greenend.org.uk/~sgtatham/puzzles/js/group.html'>https://www.chiark.greenend.org.uk/~sgtatham/puzzles/js/group.html</a> for details.)"
         ]
     },
     "guess": {
@@ -149,7 +156,7 @@ export const genreInfo = {
     },
     "mosaic": {
         name: "Mosaic",
-        description: "Shade some cells so that each clue touches the right number of shaded cells."
+        description: "Shade some cells so that each clue is near the right number of shaded cells."
     },
     "net": {
         name: "Net",
@@ -191,7 +198,7 @@ export const genreInfo = {
     },
     "rect": {
         name: "Rect",
-        description: "Divide the grid into rectangles with the indicated areas."
+        description: "Divide the grid into rectangles with the indicated areas.",
     },
     "samegame": {
         name: "SameGame",

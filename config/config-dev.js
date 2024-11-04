@@ -1,4 +1,5 @@
 export const config = {
     environment: "development",
-    enableDebug: true
+    enableDebug: true,
+    defaultHost: "localhost"
 }

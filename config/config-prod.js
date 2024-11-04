@@ -1,4 +1,5 @@
 export const config = {
     environment: "production",
-    enableDebug: false
+    enableDebug: false,
+    defaultHost: "archipelago.gg"
 }

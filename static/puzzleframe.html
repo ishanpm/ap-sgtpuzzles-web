@@ -6,18 +6,7 @@
     <script src="puzzleframe.js"></script>
     <style>
 body {
-    height: 100vh;
     margin: 0px;
-    display: flex;
-    flex-direction: row;
-}
-
-#puzzlecanvascontain {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 #puzzlecanvas {
@@ -28,12 +17,27 @@ body {
 #dlgform {
     display: none;
 }
+
+#resizable {
+    position: relative;
+}
+
+#resizehandle {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+}
+
     </style>
 </head>
 
 <body>
-    <div id="puzzlecanvascontain">
+    <div id="resizable">
         <canvas id="puzzlecanvas" tabindex="0"></canvas>
+        <svg id="resizehandle" aria-label="resize" width='10' height='10'>
+            <title>Drag to resize the puzzle. Right-click to restore the default size.</title>
+            <path d='M8.5,1.5l-7,7m7,-4l-4,4m4,-1l-1,1' stroke='currentColor' stroke-linecap='round'></path>
+        </svg>
     </div>
     <div style="display: none;">
         <!-- Hidden form controls to appease the JS frontend  -->
@@ -74,10 +78,6 @@ body {
             </ul>
         </form>
         <div id="statusbar"></div>
-        <svg id="resizehandle" aria-label="resize" width='10' height='10'>
-            <title>Drag to resize the puzzle. Right-click to restore the default size.</title>
-            <path d='M8.5,1.5l-7,7m7,-4l-4,4m4,-1l-1,1' stroke='currentColor' stroke-linecap='round'></path>
-        </svg>
         <p>
             Link to this puzzle:
             <a id="permalink-desc">by game ID</a>
