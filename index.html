@@ -20,7 +20,7 @@
                     <template x-for="file in list">
                         <li>
                             <button class="file" :class="[file == current ? 'selected' : null, apError ? 'error' : null]"
-                            @click="loadFile(file)" :disabled="connecting">
+                            @click="loadFile(file, $event.shiftKey)" :disabled="connecting">
                                 <span x-text="file.toString()"></span>
                             </button>
                             <template x-if="file.id > -1">
@@ -106,13 +106,13 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                 <template x-data x-if="$store.puzzleState.genreInfo">
                     <div>
                         <h2 x-text="$store.puzzleState.genreInfo.name"></h2>
-                        <p x-text="$store.puzzleState.genreInfo.description"></p>
+                        <p x-html="$store.puzzleState.genreInfo.description"></p>
                         <template x-if="$store.puzzleState.genreInfo.rules">
                             <div>
                                 <p>Rules summary:</p>
                                 <ul>
                                     <template x-for="line in $store.puzzleState.genreInfo.rules">
-                                        <li x-text="line"></li>
+                                        <li x-html="line"></li>
                                     </template>
                                 </ul>
                             </div>
@@ -187,6 +187,22 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                         </div>
                     </div>
                 </template>
+            </div>
+
+            <div class="overscroll-spacer"></div>
+        </div>
+    </div>
+    <div class="chatbox" style="display: none;">
+        <h2 class="chatbox-header">
+            Archipelago
+        </h2>
+        <div class="chatbox-divider"></div>
+        <div class="chatbox-content">
+            <div class="chat-history">
+            </div>
+            <div class="chat-message">
+                <input>
+                <button>Send</button>
             </div>
         </div>
     </div>

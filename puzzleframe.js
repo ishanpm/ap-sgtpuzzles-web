@@ -119,8 +119,6 @@ const messageHandlers = {
 }
 
 function processMessage(message) {
-    console.log("to puzzleframe.html:", message.data)
-
     if (!message.data[Symbol.iterator]) return;
 
     let [command, ...args] = message.data
@@ -146,7 +144,7 @@ function sendMessage(command, ...args) {
 }
 
 function setBackgroundColor(colorString) {
-    document.getElementById("puzzlecanvascontain").style.backgroundColor = colorString
+    document.getElementById("puzzle").style.backgroundColor = colorString
 }
 
 function onSolve() {
