@@ -2,4 +2,4 @@
 
 echo "Copying static files"
 mkdir -p dist
-cp -f static/* dist
+cp -rf static/* dist
