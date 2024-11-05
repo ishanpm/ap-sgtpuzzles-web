@@ -544,8 +544,8 @@ function js_canvas_remove_statusbar() {
 }
 
 function js_canvas_set_size(w, h) {
-    puzzleframe.width = w;
-    puzzleframe.height = h;
+    puzzleframe.width = w / window.devicePixelRatio;
+    puzzleframe.height = h / window.devicePixelRatio;
 }
 
 function js_focus_canvas() {
