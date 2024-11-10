@@ -1,12 +1,11 @@
-const {
+import {
     Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE, LocationsManager, ReceivedItemsPacket,
-    CLIENT_STATUS
-} = require("archipelago.js");
-const Alpine = require('alpinejs').default;
-const SaveData = require("./savedata.js");
-const {GameSave, getFile, getFileList, openDatabase} = SaveData;
-const {config} = require("config")
-const {genres, genreInfo} = require("./genres.js")
+    CLIENT_STATUS}
+    from "archipelago.js"
+import Alpine from "alpinejs";
+import {GameSave, getFile, getFileList, openDatabase} from "./savedata.js";
+import {config} from "./config.js"
+import {genres, genreInfo} from "./genres.js"
 
 document.addEventListener("alpine:init", onInit)
 
@@ -765,7 +764,7 @@ async function createFile(hostname, port, player) {
 
 /**
  * 
- * @param {SaveData.GameSave} file 
+ * @param {GameSave} file 
  */
 async function loadFile(file, secretMode) {
     const gamesaves = Alpine.store("gamesaves")
@@ -912,7 +911,7 @@ function locationNameToId(name) {
 
 /**
  * 
- * @param {SaveData.GameSave} file
+ * @param {GameSave} file
  */
 function loadFileData(file, secretMode) {
     const puzzleList = Alpine.store("puzzleList");
@@ -981,7 +980,6 @@ window.client = client;
 window.Client = Client;
 window.ArchipelagoPuzzle = ArchipelagoPuzzle;
 window.syncAPStatus = syncAPStatus;
-window.SaveData = SaveData;
 window.loadPuzzle = loadPuzzle;
 
 Alpine.start();

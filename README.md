@@ -15,8 +15,7 @@ This is a very rough prototype. As such, there are many features missing, the in
 I recommend building on Linux. If you're on Windows, you can install WSL to get a Linux-like environment.
 
 First, install these dependencies:
-- Node
-- Webpack
+- Node v22.0
 - CMake
 - Emscripten (emcmake)
 
@@ -24,18 +23,17 @@ Then run:
 
 ```sh
 npm install
-./build.sh
+./build-wasm.sh
+npm run dev
 ```
 
-...and if the stars are aligned correctly it should generate the web files in `/dist`. Serve with the webserver of your choice; I use `python3 -m http.server`.
+To build for production, run `npm run build` and copy the files from `/dev`.
 
 If you're not running Linux, you can do what the build script does manually:
 
-- Build the JS bundle using `webpack --config webpack.dev.js`. This will create a `dist/` folder
-- Copy the remaining files from `static/` into `dist/`
 - Build the `ap-sgtpuzzles/` directory using Emscripten (good luck lol)
-- Create a `dist/res/` folder and copy the built `.js` and `.wasm` files there
-- Copy the built `help/` folder to `dist/help/`
+- Create the folder `public/res/wasm` folder and copy the built `.js` and `.wasm` files there
+- Copy the built `help/` folder to `public/help/`
 
 ## License
 

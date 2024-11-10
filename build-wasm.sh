@@ -11,11 +11,11 @@ cd ../..
 
 echo "Copying resource files"
 
-mkdir -p dist/res
-cp -f ap-sgtpuzzles/build-emscripten/*.js dist/res
-cp -f ap-sgtpuzzles/build-emscripten/*.wasm dist/res
-cp -f ap-sgtpuzzles/build-emscripten/unfinished/*.js dist/res
-cp -f ap-sgtpuzzles/build-emscripten/unfinished/*.wasm dist/res
+mkdir -p public/res/wasm
+cp -f ap-sgtpuzzles/build-emscripten/*.js public/res/wasm
+cp -f ap-sgtpuzzles/build-emscripten/*.wasm public/res/wasm
+cp -f ap-sgtpuzzles/build-emscripten/unfinished/*.js public/res/wasm
+cp -f ap-sgtpuzzles/build-emscripten/unfinished/*.wasm public/res/wasm
 
-mkdir -p dist/help
-cp -rf ap-sgtpuzzles/build-emscripten/help/. dist/help/
+mkdir -p public/help
+cp -rf ap-sgtpuzzles/build-emscripten/help/. public/help/

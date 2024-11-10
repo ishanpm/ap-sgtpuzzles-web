@@ -1,2 +1,2 @@
 ./build-wasm.sh
-./build-web.sh
+npm run build

@@ -29,7 +29,7 @@ window.onload = function() {
 
 function loadPuzzle(genre) {
     let elem = document.createElement("script")
-    elem.setAttribute("src", `res/${genre}.js`)
+    elem.setAttribute("src", `res/wasm/${genre}.js`)
     document.head.appendChild(elem)
 }
 
