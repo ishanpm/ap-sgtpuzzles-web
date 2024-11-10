@@ -1,11 +1,12 @@
 import {
-    Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE, LocationsManager, ReceivedItemsPacket,
-    CLIENT_STATUS}
-    from "archipelago.js"
+    Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE, LocationsManager, ReceivedItemsPacket, PrintJSONPacket,
+    CLIENT_STATUS
+} from "archipelago.js"
 import Alpine from "alpinejs";
 import {GameSave, getFile, getFileList, openDatabase} from "./savedata.js";
 import {config} from "./config.js"
 import {genres, genreInfo} from "./genres.js"
+import * as bootstrap from "bootstrap"
 
 document.addEventListener("alpine:init", onInit)
 
@@ -85,6 +86,10 @@ class ArchipelagoPuzzle {
         let seed = `${seedPrefix}${baseSeed}`;
 
         let genreParamsMatch = /^([^:]*)(:(.*))?$/.exec(genreAndParams);
+
+        if (genreParamsMatch === null) {
+            throw new Error(`Couldn't parse puzzle description: ${genreAndParams}`)
+        }
 
         options ??= {};
 
@@ -284,6 +289,7 @@ function initStores() {
     Alpine.store("puzzleDialog", {
         controls: [],
         visible: false,
+        modal: null,
         addControl(index, type, title, initialValue, choices) {
             if (type == "choice") {
                 this.controls.push({index, type, title, value: initialValue, choices})
@@ -293,9 +299,14 @@ function initStores() {
         },
         confirm: dialogConfirm,
         cancel: dialogCancel,
+        show() {
+            this.modal = new bootstrap.Modal("#puzzleModal")
+            this.modal.show()
+        },
         dismiss() {
             this.controls = [];
             this.visible = false;
+            this.modal?.hide()
         }
     })
 
@@ -527,7 +538,7 @@ function js_dialog_boolean(index, title, initvalue) {
 }
 
 function js_dialog_launch() {
-    Alpine.store("puzzleDialog").visible = true;
+    Alpine.store("puzzleDialog").show();
 }
 
 function js_dialog_cleanup() {
@@ -622,6 +633,10 @@ function solvePuzzle() {
 
     // Mark puzzle as solved regardless of whether the puzzle was actually solved
 
+    Alpine.store("puzzleList").markSolved()
+}
+
+function skipPuzzle() {
     Alpine.store("puzzleList").markSolved()
 }
 
@@ -867,6 +882,14 @@ function logEvent(event) {
     console.log(event);
 }
 
+/**
+ * @param {PrintJSONPacket} event 
+ * @param {string} message 
+ */
+function onPrintJson(event, message) {
+    console.log(message)
+}
+
 async function connectAP(hostname, port, player) {
     if (!client) {
         client = new Client();
@@ -877,6 +900,7 @@ async function connectAP(hostname, port, player) {
     client.addListener("ReceivedItems", onReceiveItems);
     client.addListener("RoomUpdate", syncAPStatus);
     client.addListener("PacketReceived", logEvent);
+    client.addListener("PrintJSON", onPrintJson)
 
     console.log("connecting to AP...");
 

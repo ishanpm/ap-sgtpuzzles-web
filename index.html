@@ -3,17 +3,61 @@
 <head>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="src/puzzles.css">
+    <link rel="stylesheet" href="src/custom.scss">
     <script src="src/puzzles.js" type="module"></script>
 </head>
 <body>
-    <div class="content">
+    <div x-data="$store.puzzleDialog" class="modal" id="puzzleModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>Title</h5>
+                </div>
+                <div class="modal-body">
+                    <ul>
+                        <template x-for="control in controls">
+                            <li>
+                                <template x-if="control.type == 'string'">
+                                    <label>
+                                        <span x-text="control.title"></span>
+                                        <input x-model="control.value">
+                                    </label>
+                                </template>
+                                <template x-if="control.type == 'choice'">
+                                    <label>
+                                        <span x-text="control.title"></span>
+                                        <select x-model="control.value">
+                                            <template x-for="(display, id) in control.choices">
+                                                <option x-text="display" :value="id" :selected="id == control.value"></option>
+                                            </template>
+                                        </select>
+                                    </label>
+                                </template>
+                                <template x-if="control.type == 'boolean'">
+                                    <label>
+                                        <input type="checkbox" x-model="control.value">
+                                        <span x-text="control.title"></span>
+                                    </label>
+                                </template>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" @click="confirm()">OK</button>
+                    <button class="btn btn-secondary" @click="cancel()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container content">
         <div class="left-pane">
             <div class="file-selector">
                 <form x-data="$store.connectionInfo" @submit.prevent="if (!$store.gamesaves.connecting) connect()">
                     <label>Host: <input x-model="hostname"></label><br>
                     <label>Port: <input x-model="port"></label><br>
                     <label>Player: <input x-model="player"></label><br>
-                    <button type="submit" :disabled="$store.gamesaves.connecting">Connect</button>
+                    <button class="btn btn-primary" type="submit" :disabled="$store.gamesaves.connecting">Connect</button>
                 </form>
                 <div class="spacer"></div>
                 <ul class="file-list" x-data="$store.gamesaves">
@@ -73,19 +117,21 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
             </form>
             <div x-data>
                 <div>
-                    <button onclick="showPreferences()" :style="{display: $store.puzzleState.genre ? null : 'none'}"
+                    <button class="btn btn-secondary" onclick="showPreferences()" :style="{display: $store.puzzleState.genre ? null : 'none'}"
                     :disabled="!$store.puzzleState.loaded">
                         Preferences for <span x-text="$store.puzzleState.genreInfo.name"></span>...
                     </button>
-                    <button onclick="savePuzzleData()" :style="{display: $store.singleMode ? null : 'none'}"
+                    <button class="btn btn-secondary" onclick="savePuzzleData()" :style="{display: $store.singleMode ? null : 'none'}"
                     :disabled="!$store.puzzleState.loaded">Save puzzle progress</button>
                 </div>
                 <div>
-                    <button :style="{display: $store.singleMode ? 'none' : null}" :disabled="!$store.puzzleState.loaded" onclick="newPuzzle()">New</button>
-                    <button onclick="restartPuzzle()" :disabled="!$store.puzzleState.loaded">Restart</button>
-                    <button onclick="undoPuzzle()" :disabled="!$store.puzzleState.undoEnabled">Undo</button>
-                    <button onclick="redoPuzzle()" :disabled="!$store.puzzleState.redoEnabled">Redo</button>
-                    <button :style="{display: ($store.singleMode && !$store.debugMode) ? 'none' : null}" onclick="solvePuzzle()"
+                    <button class="btn btn-secondary" :style="{display: $store.singleMode ? 'none' : null}" :disabled="!$store.puzzleState.loaded" onclick="newPuzzle()">New</button>
+                    <button class="btn btn-secondary" onclick="restartPuzzle()" :disabled="!$store.puzzleState.loaded">Restart</button>
+                    <div class="btn-group" role="group" aria-label="Undo controls">
+                        <button class="btn btn-secondary" onclick="undoPuzzle()" :disabled="!$store.puzzleState.undoEnabled">Undo</button>
+                        <button class="btn btn-secondary" onclick="redoPuzzle()" :disabled="!$store.puzzleState.redoEnabled">Redo</button>
+                    </div>
+                    <button class="btn btn-secondary" :style="{display: ($store.singleMode && !$store.debugMode) ? 'none' : null}" onclick="solvePuzzle()"
                     x-text="$store.puzzleState.solveEnabled ? 'Solve' : 'Skip'" :disabled="!$store.puzzleState.loaded">
                         Solve
                     </button>
@@ -150,42 +196,6 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                             </li>
                         </template>
                     </ul>
-                </template>
-                <template x-data="$store.puzzleDialog" x-if="visible">
-                    <div class="dialog-container">
-                        <div class="puzzle-dialog">
-                            <ul>
-                                <template x-for="control in controls">
-                                    <li>
-                                        <template x-if="control.type == 'string'">
-                                            <label>
-                                                <span x-text="control.title"></span>
-                                                <input x-model="control.value">
-                                            </label>
-                                        </template>
-                                        <template x-if="control.type == 'choice'">
-                                            <label>
-                                                <span x-text="control.title"></span>
-                                                <select x-model="control.value">
-                                                    <template x-for="(display, id) in control.choices">
-                                                        <option x-text="display" :value="id" :selected="id == control.value"></option>
-                                                    </template>
-                                                </select>
-                                            </label>
-                                        </template>
-                                        <template x-if="control.type == 'boolean'">
-                                            <label>
-                                                <input type="checkbox" x-model="control.value">
-                                                <span x-text="control.title"></span>
-                                            </label>
-                                        </template>
-                                    </li>
-                                </template>
-                            </ul>
-                            <button @click="confirm()">OK</button>
-                            <button @click="cancel()">Cancel</button>
-                        </div>
-                    </div>
                 </template>
             </div>
 
