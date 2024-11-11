@@ -64,22 +64,24 @@
                     <div class="spacer-y"></div>
                     <div class="file-list list-group" x-data="$store.gamesaves">
                         <template x-for="file in list">
-                            <button class="file list-group-item" :class="[file == current ? 'active' : null, apError ? 'error' : null]"
-                            @click="loadFile(file, $event.shiftKey)" :disabled="connecting">
+                            <a href="#" class="file list-group-item" :class="[file == current ? 'active' : null, apError ? 'error' : null]"
+                            @click.prevent="loadFile(file, $event.shiftKey)" :disabled="connecting">
                                 <span class="file-label" x-text="file.toString()"></span>
                                 <template x-if="file.id > -1">
-                                    <button class="btn file-delete" @click="deleteFile(file)" :disabled="connecting">
+                                    <button class="btn file-delete" @click="deleteFile(file);$event.stopPropagation()" :disabled="connecting">
                                         <i class="bi bi-trash" aria-label="Delete file"></i>
                                     </button>
                                 </template>
-                            </button>
+                            </a>
                         </template>
                     </div>
                 </div>
                 <div class="puzzle-selector list-group" x-data="$store.puzzleList" role="list">
                     <template x-if="solveTarget !== null">
                         <button class="list-group-item puzzle finish-button" href="#" :class="{solved: finished}" :disabled="solveCount &lt; solveTarget" @click="onFinishClick()">
-                            Finish (<span x-text="solveCount"></span> of <span x-text="solveTarget"></span> solved)
+                            <div>
+                                Finish (<span x-text="solveCount"></span> of <span x-text="solveTarget"></span> solved)
+                            </div>
                         </button>
                     </template>
                     <template x-for="entry in sortedEntries" :key="entry.index">
@@ -88,11 +90,19 @@
                                                 @click="selectPuzzle(entry)"
                                                 :disabled="entry.locked && !$store.debugMode">
                             <div>
-                                <span x-text="entry.index"></span>:
-                                <span x-text="entry.name"></span>
+                                <i class="solve-indicator bi" :class="{'bi-check-lg': entry.solved, 'bi-lock': entry.locked}"></i>
                             </div>
-                            <div class="small">
-                                <span x-text="entry.params"></span>
+                            <div class="flex-grow">
+                                <div class="puzzle-title">
+                                    <div class="flex-grow">
+                                        <span x-text="entry.index"></span>:
+                                        <span x-text="entry.name"></span>
+                                    </div>
+                                    <i class="reward-indicator bi" :class="{'bi-circle-fill': !entry.collected && entry.items.length > 0 && !entry.locked, 'bi-circle': entry.collected && entry.items.length > 0 && !entry.locked}"></i>
+                                </div>
+                                <div class="small">
+                                    <span x-text="entry.params"></span>
+                                </div>
                             </div>
                         </button>
                     </template>
@@ -125,9 +135,6 @@
                         </button>
                         <button class="btn btn-secondary" onclick="savePuzzleData()" :style="{display: $store.singleMode ? null : 'none'}"
                         :disabled="!$store.puzzleState.loaded">Save puzzle progress</button>
-                        <a class="btn btn-primary" data-bs-toggle="offcanvas" href="#archipelago-chat" role="button" aria-controls="archipelago-chat">
-                            Link with href
-                          </a>
                           
                     </div>
                     <div>
@@ -209,8 +216,8 @@
             </div>
         </div>
     </div>
-    <div class="chatbox" x-data="$store.chat">
-        <h5 class="chatbox-header">
+    <div class="chatbox" :class="[show ? 'show' : 'hide']" x-data="$store.chat">
+        <h5 class="chatbox-header" @click="show = !show">
             Archipelago
         </h5>
         <div class="chatbox-divider"></div>
@@ -220,12 +227,12 @@
                     <div x-text="message"></div>
                 </template>
             </div>
-            <div class="chat-message">
-                <input x-model="outgoingMessage">
-                <button class="btn btn-primary" @click="send(outgoingMessage)">
+            <form class="chat-message" @submit.prevent="send(outgoingMessage); outgoingMessage=''">
+                <input x-model="outgoingMessage" :disabled="!$store.gamesaves.connected">
+                <button type="submit" class="btn btn-primary" :disabled="!$store.gamesaves.connected">
                     <i class="bi bi-send-fill" aria-label="Send"></i>
                 </button>
-            </div>
+            </form>
         </div>
     </div>
 </body>

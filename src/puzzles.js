@@ -1,6 +1,7 @@
 import {
     Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE, LocationsManager, ReceivedItemsPacket, PrintJSONPacket,
-    CLIENT_STATUS
+    CLIENT_STATUS,
+    SetOperationsBuilder
 } from "archipelago.js"
 import Alpine from "alpinejs";
 import {GameSave, getFile, getFileList, openDatabase} from "./savedata.js";
@@ -17,6 +18,8 @@ let apReady = false;
  * @type{Client}
  */
 let client;
+
+let remoteSolved = {};
 
 class ArchipelagoPuzzle {
     constructor(options) {
@@ -44,7 +47,7 @@ class ArchipelagoPuzzle {
         this.solved = options.solved ?? false;
         this.collected = options.collected ?? false;
         this.locked = options.locked ?? false;
-        this.item = options.item;
+        this.items = options.items ?? [];
         this.state = "";
 
         this.updateDescription();
@@ -191,15 +194,20 @@ function initStores() {
                 loadPuzzle(entry.genre, "", false);
             }
         },
-        markSolved() {
-            if (this.current) {
-                this.current.onSolve();
+        markSolved(puzzle) {
+            puzzle ??= this.current
+
+            if (puzzle) {
+                puzzle.onSolve();
+
+                if (puzzle == this.current) {
+                    savePuzzleData();
+                }
 
                 const gamesaves = Alpine.store("gamesaves")
 
-                if (this.current.index && gamesaves.current) {
-                    savePuzzleData();
-                    gamesaves.current.puzzleSolved[this.current.index-1] = true;
+                if (puzzle.index && gamesaves.current) {
+                    gamesaves.current.puzzleSolved[puzzle.index-1] = true;
                     gamesaves.current.save();
                 }
 
@@ -367,6 +375,7 @@ function initStores() {
         current: null,
         apError: false,
         connecting: false,
+        connected: false,
         loadFile(file, secretMode) {
             loadFile(file, secretMode);
         },
@@ -385,6 +394,7 @@ function initStores() {
     })
 
     Alpine.store("chat", {
+        show: false,
         messages: [],
         outgoingMessage: "",
         send(message) {
@@ -396,6 +406,9 @@ function initStores() {
             // for (let line of message.split("\n")) {
             //     this.messages.push(line);
             // }
+
+            //TODO parse the actual content
+            //TODO limit log length?
             this.messages.push(message);
             Alpine.nextTick(() => this.scrollToBottom(false))
         },
@@ -730,6 +743,9 @@ function syncAPStatus() {
 
     let fileDirty = false;
 
+    let newRemoteSolves = {};
+    let anyNewRemoteSolves = false;
+
     for (let entry of puzzleList.entries) {
         let dirty = false;
         let itemId = itemNameToId(`Puzzle ${entry.index}`);
@@ -755,6 +771,20 @@ function syncAPStatus() {
         if (dirty) {
             entry.updateState();
         }
+
+        if (entry.solved && !(entry.index in remoteSolved)) {
+            newRemoteSolves[entry.index] = 1;
+            remoteSolved[entry.index] = 1;
+            anyNewRemoteSolves = true;
+        }
+    }
+
+    if (anyNewRemoteSolves) {
+        let player = Alpine.store("connectionInfo").player
+        let operations = new SetOperationsBuilder(`sgtpuzzles/solves/${player}`, {}, true)
+        operations = operations.update(newRemoteSolves)
+        console.log(operations)
+        client.data.set(operations)
     }
 
     puzzleList.resort();
@@ -806,6 +836,7 @@ async function createFile(hostname, port, player) {
     gamesaves.connecting = false;
     gamesaves.list.push(newFile);
     gamesaves.current = newFile;
+    initRemoteSolves();
     syncAPStatus();
 }
 
@@ -863,6 +894,8 @@ async function loadFile(file, secretMode) {
 
     if (connectOk) {
         apReady = true;
+        gamesaves.connected = true;
+        initRemoteSolves();
     }
 
     gamesaves.connecting = false;
@@ -922,17 +955,60 @@ function onPrintJson(event, message) {
     Alpine.store("chat").append(message)
 }
 
+/**
+ * @param {import("archipelago.js").SetReplyPacket} event 
+ */
+function onSetReply(event) {
+    let player = Alpine.store("connectionInfo").player
+    let key = `sgtpuzzles/solves/${player}`
+
+    if (event.key == key) {
+        copyRemoteSolves(event.value)
+    }
+}
+
+/**
+ * @param {import("archipelago.js").RetrievedPacket} event 
+ */
+function onKeysRetreived(event) {
+    let player = Alpine.store("connectionInfo").player
+    let key = `sgtpuzzles/solves/${player}`
+    
+    if (event.keys[key]) {
+        copyRemoteSolves(event.keys[key])
+    }
+}
+
+function copyRemoteSolves(solves) {
+    let puzzleList = Alpine.store("puzzleList")
+
+    let oldRemoteSolved = {};
+    Object.assign(oldRemoteSolved, remoteSolved)
+
+    for (let id in solves) {
+        if (!(id in oldRemoteSolved)) {
+            console.log(`adding remote solve ${id}`)
+            remoteSolved[id] = solves[id];
+            puzzleList.markSolved(puzzleList.entries[id-1]);
+        }
+    }
+}
+
 async function connectAP(hostname, port, player) {
     if (!client) {
         client = new Client();
         window.client = client;
     }
 
+    remoteSolved = {};
+
     // TODO probably unnecessary to sync both due to ReceivedItems and RoomUpdate..?
+    client.addListener("PacketReceived", logEvent);
     client.addListener("ReceivedItems", onReceiveItems);
     client.addListener("RoomUpdate", syncAPStatus);
-    client.addListener("PacketReceived", logEvent);
     client.addListener("PrintJSON", onPrintJson)
+    client.addListener("SetReply", onSetReply)
+    client.addListener("Retrieved", onKeysRetreived)
 
     console.log("connecting to AP...");
 
@@ -947,6 +1023,14 @@ async function connectAP(hostname, port, player) {
     await client.connect(connectionInfo);
 
     console.log("connected to AP");
+}
+
+function initRemoteSolves() {
+    let player = Alpine.store("connectionInfo").player
+    let key = `sgtpuzzles/solves/${player}`
+
+    client.send({cmd:"SetNotify", keys:[key]})
+    client.send({cmd:"Get", keys:[key]})
 }
 
 function itemIdToName(id) {
@@ -989,7 +1073,11 @@ function loadFileData(file, secretMode) {
     puzzleList.sortBySolved = !isFreeplay;
 
     for (let i = 0; i < file.puzzles.length; i++) {
-        let options = {locked: file.puzzleLocked[i], solved: file.puzzleSolved[i]}
+        let options = {
+            locked: file.puzzleLocked[i],
+            solved: file.puzzleSolved[i],
+            items: isFreeplay ? [] : ["item goes here"]
+        }
 
         let newEntry;
         if (isFreeplay) {
@@ -1010,10 +1098,17 @@ function loadFileData(file, secretMode) {
 }
 
 function disconnectAP() {
-    if (client) {
+    const gamesaves = Alpine.store("gamesaves")
+    
+    if (client && client.status != "Disconnected") {
+
         apReady = false;
+        gamesaves.connected = false;
         console.log("disconnecting from AP...");
         client.disconnect();
+
+        let chat = Alpine.store("chat")
+        chat.append("Disconnected from server")
     }
 }
 
