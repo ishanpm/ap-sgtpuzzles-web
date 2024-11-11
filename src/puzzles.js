@@ -23,6 +23,9 @@ class ArchipelagoPuzzle {
         // Puzzle genre
         this.genre = options.genre;
 
+        // Human-readable genre name
+        this.name = genreInfo[this.genre || "none"]
+
         // Puzzle generation options (size, difficulty, etc.)
         this.params = options.params;
 
@@ -49,7 +52,7 @@ class ArchipelagoPuzzle {
     }
 
     updateDescription() {
-        let name = genreInfo[this.genre].name;
+        this.name = genreInfo[this.genre].name;
 
         if (this.params) {
             this.desc = `${name}: ${this.params}`;
@@ -378,6 +381,35 @@ function initStores() {
                 this.current.finished = true;
                 this.current.save();
             }
+        }
+    })
+
+    Alpine.store("chat", {
+        messages: [],
+        outgoingMessage: "",
+        send(message) {
+            if (client) {
+                client.say(message)
+            }
+        },
+        append(message) {
+            // for (let line of message.split("\n")) {
+            //     this.messages.push(line);
+            // }
+            this.messages.push(message);
+            Alpine.nextTick(() => this.scrollToBottom(false))
+        },
+        scrollToBottom(force) {
+            let elem = document.getElementById("chatHistory");
+            if (!force && (elem.scrollHeight + elem.clientHeight < elem.scrollHeight)) {
+                return;
+            }
+
+            elem.scrollTo(0, elem.scrollHeight);
+        },
+        clear() {
+            console.error("Not implemented")
+            //this.messages = [];
         }
     })
 
@@ -887,7 +919,7 @@ function logEvent(event) {
  * @param {string} message 
  */
 function onPrintJson(event, message) {
-    console.log(message)
+    Alpine.store("chat").append(message)
 }
 
 async function connectAP(hostname, port, player) {
