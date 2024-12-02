@@ -31,6 +31,7 @@
   "devDependencies": {
     "@tsconfig/node22": "^22.0.0",
     "@types/alpinejs": "^3.13.10",
+    "@types/bootstrap": "^5.2.10",
     "@types/node": "^22.9.0",
     "@vitejs/plugin-vue": "^5.1.4",
     "@vue/tsconfig": "^0.5.1",

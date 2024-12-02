@@ -8,11 +8,19 @@ import {GameSave, getFile, getFileList, openDatabase} from "./savedata.js";
 import {config} from "./config.js"
 import {genres, genreInfo} from "./genres.js"
 import * as bootstrap from "bootstrap"
+//import * as vue from "vue"
 
 document.addEventListener("alpine:init", onInit)
 
 let puzzleframe;
 let apReady = false;
+
+// let tmp_store = vue.reactive({});
+
+// const Alpine = {
+//     store(key, value) {if (value !== undefined) {tmp_store[key] = value} return tmp_store[key]},
+//     start() {vue.createApp().mount()}
+//}
 
 /**
  * @type{Client}

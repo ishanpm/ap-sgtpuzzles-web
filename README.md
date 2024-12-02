@@ -10,6 +10,12 @@ https://archipelago.gg/
 
 This is a very rough prototype. As such, there are many features missing, the interface is a bit of a mess, it's relatively untested, and absolutely everything is subject to change. If you'd like to report a bug or suggest a feature, feel free to [create an issue here](https://github.com/ishanpm/ap-sgtpuzzles-web/issues).
 
+## How to play
+
+### Setup
+
+First, download the most recent build of the AP world from the [Releases page](https://github.com/ishanpm/ap-sgtpuzzles-web/releases) and install it 
+
 ## Build
 
 I recommend building on Linux. If you're on Windows, you can install WSL to get a Linux-like environment.
