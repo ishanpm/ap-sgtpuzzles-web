@@ -40,5 +40,6 @@ function selectPreset(index: number){
 <style>
 .preset-select {
     max-height: 30em;
+    overflow-y: auto;
 }
 </style>
