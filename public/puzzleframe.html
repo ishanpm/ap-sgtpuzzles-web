@@ -7,8 +7,19 @@
     <script src="puzzleframe.js"></script>
     <style>
 body {
+    height: 100vh;
     margin: 0px;
+    display: flex;
+    flex-direction: row;
     overflow: hidden;
+}
+
+#puzzlecanvascontain {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #puzzlecanvas {
@@ -35,12 +46,12 @@ body {
 </head>
 
 <body>
-    <div id="resizable">
+    <div id="puzzlecanvascontain">
         <canvas id="puzzlecanvas" tabindex="0"></canvas>
-        <svg id="resizehandle" aria-label="resize" width='10' height='10'>
+        <!--svg id="resizehandle" aria-label="resize" width='10' height='10'>
             <title>Drag to resize the puzzle. Right-click to restore the default size.</title>
             <path d='M8.5,1.5l-7,7m7,-4l-4,4m4,-1l-1,1' stroke='currentColor' stroke-linecap='round'></path>
-        </svg>
+        </svg-->
     </div>
     <div style="display: none;">
         <!-- Hidden form controls to appease the JS frontend  -->

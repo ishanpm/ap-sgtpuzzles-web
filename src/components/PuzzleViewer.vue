@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, shallowRef, useTemplateRef } from 'vue';
+import { onMounted, onUnmounted, ref, shallowRef, useId, useTemplateRef } from 'vue';
 import { Modal } from 'bootstrap';
+import type { GenrePresetElement, GenrePresetList, GenrePresetSubmenuElement } from '@/types/GenrePresetList';
 
 interface PuzzleDialogStringControl {
     type: "string",
@@ -26,17 +27,26 @@ interface PuzzleDialogBooleanControl {
 
 type PuzzleDialogControl = PuzzleDialogStringControl | PuzzleDialogChoiceControl | PuzzleDialogBooleanControl
 
+const id = useId();
 const puzzleFrame = useTemplateRef("puzzleFrame")
 const puzzleModalElem = useTemplateRef("puzzleModalElem")
 const puzzleModal = shallowRef<Modal | undefined>()
 
 const frameSource = ref("about:blank")
 const dialogVisible = ref(false)
+const dialogTitle = ref("")
 const dialogControls = ref<PuzzleDialogControl[]>([])
 
-function boop() {
-    frameSource.value = "puzzleframe.html?g=loopy"
-}
+//
+// Public interface
+//
+
+defineExpose({
+    newPuzzle, showPreferences, selectPreset
+})
+
+const presetList = defineModel<GenrePresetList>("presetList")
+const currentPreset = defineModel<number>("currentPreset")
 
 function confirmModal() {
     if (dialogVisible.value) {
@@ -53,8 +63,7 @@ function confirmModal() {
             }
         }
         sendMessage("dialogConfirm");
-
-        puzzleModal.value?.hide();
+        //TODO: Lock modal while waiting for cleanup (in case of error)
     }
 }
 
@@ -83,18 +92,55 @@ function showPreferences() {
     sendMessage("showPreferences")
 }
 
+function selectPreset(index: number) {
+    currentPreset.value = index
+    sendMessage("setPreset", index)
+}
+
 const messageHandlers: {[command: string]: (...args: any[]) => void | undefined} = {
-    ready() {},
-    js_init_puzzle() {},
-    js_post_init() {},
+    ready() {
+        console.log("puzzle viewer: ready")
+    },
+    js_init_puzzle() {
+        console.log("puzzle viewer: init_puzzle")
+        presetList.value = {0: []}
+    },
+    js_post_init() {
+        console.log("puzzle viewer: post_init")
+    },
     js_update_permalinks() {},
     js_enable_undo_redo() {},
     js_remove_solve_button() {},
     js_update_status() {},
     js_update_key_labels() {},
-    js_add_preset() {},
-    js_add_preset_submenu() {},
-    js_select_preset() {},
+    js_add_preset(menuId: number, title: string, index: number) {
+        if (!presetList.value) {
+            throw new Error("Tried to add preset before initialization")
+        }
+
+        let newPreset: GenrePresetElement = {
+            type: "preset",
+            title,
+            index
+        }
+
+        presetList.value[0].push(newPreset)
+    },
+    js_add_preset_submenu(parentId, title, newId) {
+        if (!presetList.value) {
+            throw new Error("Tried to add preset submenu before initialization")
+        }
+        let newMenu: GenrePresetSubmenuElement = {
+            type: "submenu",
+            title,
+            index: newId
+        }
+        
+        presetList.value[0].push(newMenu)
+    },
+    js_select_preset(index) {
+        currentPreset.value = index
+    },
     js_dialog_init() {
         dialogControls.value = [];
     },
@@ -115,7 +161,9 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
         puzzleModal.value?.show()
         dialogVisible.value = true
     },
-    js_dialog_cleanup() {},
+    js_dialog_cleanup() {
+        puzzleModal.value?.hide();
+    },
     js_canvas_set_statusbar() {},
     js_canvas_remove_statusbar() {},
     js_canvas_set_size() {},
@@ -153,13 +201,17 @@ onMounted(() => {
     }
 
     if (!puzzleFrame.value) {
-        throw new Error("")
+        throw new Error("Puzzle frame not initialized")
     }
 
     puzzleModal.value = new Modal(puzzleModalElem.value)
     puzzleModalElem.value.addEventListener("hide.bs.modal", onModalHide)
 
+    frameSource.value = "puzzleframe.html?g=loopy"
+
     window.addEventListener("message", processMessage)
+
+    presetList.value = [];
 })
 
 onUnmounted(() => {
@@ -169,37 +221,35 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <iframe :src="frameSource" ref="puzzleFrame" class="puzzleframe" width="500" height="500"></iframe>
-
-    <button class="btn btn-primary" @click="boop">Boop</button>
-    <button class="btn btn-primary" @click="newPuzzle">New Game</button>
-    <button class="btn btn-primary" @click="showPreferences">Preferences</button>
+    <iframe :src="frameSource" ref="puzzleFrame" class="puzzleframe"></iframe>
 
     <Teleport to="body">
-        <div class="modal fade" ref="puzzleModalElem">
+        <div class="modal fade" tabindex="-1" ref="puzzleModalElem">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5>Title</h5>
+                        <h1 :id="`ddialog-title-${id}`">Title</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
-                        <ul>
-                            <li v-for="control in dialogControls">
-                                <label v-if="control.type == 'string'">
-                                    {{ control.title }}
-                                    <input v-model="control.value">
-                                </label>
-                                <label v-if="control.type == 'choice'">
-                                    {{ control.title }}
-                                    <select v-model="control.value">
-                                        <option v-for="(display, id) in control.choices" :value="id" :selected="id == control.value">{{ display }}</option>
+                        <form>
+                            <div v-for="control in dialogControls">
+                                <div v-if="control.type == 'string'" class="mb-3">
+                                    <label :for="`dialog-control-${control.index}-${id}`" class="form-label">{{ control.title }}</label>
+                                    <input v-model="control.value" class="form-control" :id="`dialog-control-${control.index}-${id}`">
+                                </div>
+                                <div v-if="control.type == 'boolean'" class="mb-3 form-check">
+                                    <input v-model="control.value" type="checkbox" class="form-check-input" :id="`dialog-control-${control.index}-${id}`">
+                                    <label class="form-check-label" :for="`dialog-control-${control.index}-${id}`">{{ control.title }}</label>
+                                </div>
+                                <div v-if="control.type == 'choice'" class="mb-3">
+                                    <label :for="`dialog-control-${control.index}-${id}`" class="form-label">{{ control.title }}</label>
+                                    <select v-model="control.value" class="form-select" :id="`dialog-control-${control.index}-${id}`">
+                                        <option v-for="(display, index) in control.choices" :value="index" :selected="index == control.value">{{ display }}</option>
                                     </select>
-                                </label>
-                                <label v-if="control.type == 'boolean'">
-                                    <input type="checkbox" v-model="control.value"> {{ control.title }}
-                                </label>
-                            </li>
-                        </ul>
+                                </div>
+                            </div>
+                        </form>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-primary" @click="confirmModal()">OK</button>
@@ -214,5 +264,7 @@ onUnmounted(() => {
 <style>
 .puzzleframe {
     border: 2px solid black;
+    width: 100%;
+    height: 500px;
 }
 </style>

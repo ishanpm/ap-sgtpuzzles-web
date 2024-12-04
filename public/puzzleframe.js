@@ -19,6 +19,10 @@ window.onload = function() {
     if (genre) {
         loadPuzzle(genre);
     }
+    
+    document.getElementById("puzzlecanvascontain").addEventListener("click", function() {
+        document.getElementById("puzzlecanvas").focus()
+    })
 
     window.parent.postMessage(["ready"]);
 }
@@ -144,7 +148,7 @@ function sendMessage(command, ...args) {
 }
 
 function setBackgroundColor(colorString) {
-    document.getElementById("puzzle").style.backgroundColor = colorString
+    document.getElementById("puzzlecanvascontain").style.backgroundColor = colorString
 }
 
 function onSolve() {

@@ -1,53 +1,57 @@
-/**
- * @readonly
- * @enum {string}
- */
+
 export const genres = [
     "blackbox","bridges","cube","dominosa","fifteen","filling","flip","flood","galaxies",
     "guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
     "netslide","palisade","pattern","pearl","pegs","range","rect","samegame","signpost",
     "singles","sixteen","slant","solo","tents","towers","tracks","twiddle","undead",
-    "unequal","unruly","untangle","group"
-];
+    "unequal","unruly","untangle","group","none"
+] as const;
 
-/**
- * @typedef {Object} ParameterFormatProperty
- * @property {string} key Internal identifier for this property
- * @property {string} name Human-readable name for this property
- * @property {('boolean'|'choice'|'number'|'string')} type Type of this property
- * @property {number} [min] Minimum allowed value for numeric or choice properties
- * @property {number} [max] Maximum allowed value for numeric or choice properties
- * 
- * @typedef {Object} ParameterFormatCodeComponent
- * @property {string} key Internal identifier for this property
- * @property {string} [prefix] Prefix for string component
- * @property {{[x: (string|number)]: string}} [values] Mapping from internal value to string encoding
- * 
- * 
- * @typedef {Object} ParameterFormatLabelComponent
- * @property {string} key Internal identifier for this property
- * @property {string} [format] Format for string component, with `{}` substituted for the value
- * @property {{[x: (string|number)]: string}} [values] Mapping from internal value to string encoding
- * 
- * @typedef {Object} ParameterFormat
- * @property {ParameterFormatProperty[]} properties Parameters, as sent to the Puzzles midend
- * @property {ParameterFormatCodeComponent[]} codeFormat Format for parameter strings
- * @property {ParameterFormatLabelComponent[]} labelFormat Format for pretty-printing
- * 
- * @typedef {Object} GenreInfoEntry
- * @property {string} name
- * @property {string} [description]
- * @property {string} [helpLink] Link to the help page for this puzzle. If undefined, defaults to the empty string. 
- * @property {string[]} [rules]
- * @property {any} [controls]
- * @property {ParameterFormat} [params]
- * @property {boolean} [hidden]
- */
+interface ParameterFormatProperty {
+    /** Internal identifier for this property */
+    key: string
+    /** Human-readable name for this property */
+    name: string
+    /** Type of this property */
+    type: ('boolean'|'choice'|'number'|'string')
+    /** Minimum allowed value for numeric or choice properties */
+    min?: number
+    /** Maximum allowed value for numeric or choice properties */
+    max?: number
+}
 
-/**
- * @type {{[x: genres]: GenreInfoEntry}}
- */
-export const genreInfo = {
+interface ParameterFormatCodeComponent {
+    key: string;
+    prefix?: string;
+    values?: { [x: (string | number)]: string; };
+}
+
+interface ParameterFormatLabelComponent {
+    key: string;
+    format?: string;
+    values?: { [x: (string | number)]: string; };
+}
+
+interface ParameterFormat {
+    properties: ParameterFormatProperty[];
+    codeFormat: ParameterFormatCodeComponent[];
+    labelFormat: ParameterFormatLabelComponent[];
+}
+
+interface GenreInfoEntry {
+    name: string;
+    description?: string;
+    helpLink?: string;
+    rules?: string[];
+    controls?: any;
+    params?: ParameterFormat;
+    hidden?: boolean;
+    special?: boolean;
+
+    forbidUndo?: boolean;
+}
+
+export const genreInfo: {[x in typeof genres[number]]: GenreInfoEntry} = {
     "blackbox": {
         name: "Blackbox",
         description: "Use beam reflections to locate the hidden marbles.",
@@ -124,7 +128,8 @@ export const genreInfo = {
         rules: [
             "Black circles indicate how many pegs are correct.",
             "white circles indicate how many pegs are the right color, but in the wrong location."
-        ]
+        ],
+        forbidUndo: true
     },
     "inertia": {
         name: "Inertia",
@@ -158,7 +163,8 @@ export const genreInfo = {
     },
     "mines": {
         name: "Mines",
-        description: "Open every cell without clicking mines."
+        description: "Open every cell without clicking mines.",
+        forbidUndo: true
     },
     "mosaic": {
         name: "Mosaic",
@@ -195,7 +201,7 @@ export const genreInfo = {
     },
     "range": {
         name: "Range",
-        description: "Shade cells so that each clue sees the indicated number of ushaded cells.",
+        description: "Shade cells so that each clue sees the indicated number of unshaded cells.",
         rules: [
             "Clues indicate the total number of unshaded cells reachable in a horizontal or vertical line from the clue, including itself.",
             "Shaded cells cannot be adjacent.",
@@ -247,12 +253,17 @@ export const genreInfo = {
             "Each tree must be next to its own tent, and each tent must be next to its own tree.",
             "A tent can be next to multiple trees, but it must be possible to pair the tents and trees without overlaps.",
             "Tents cannot be adjacent, not even diagonally.",
-            "Clues indicate the number of tents in a row or column"
+            "Clues indicate the number of tents in a row or column."
         ]
     },
     "towers": {
         name: "Towers",
-        description: "Place towers so that the right amount can be seen from outside."
+        description: "Place towers so that the right amount can be seen from outside.",
+        rules: [
+            "Each row and column contains the numbers from 1 to the grid size exactly once.",
+            "Clues around the grid indicate how many towers can be seen in a straight line from there.",
+            "Towers obscure towers with a smaller number behind them."
+        ]
     },
     "tracks": {
         name: "Tracks",
@@ -286,7 +297,11 @@ export const genreInfo = {
     },
     "unruly": {
         name: "Unruly",
-        description: "Shade cells so that no line of three cells has the same color."
+        description: "Shade cells so that no line of three cells has the same color.",
+        rules: [
+            "No line of three cells in a row or column can be all black or all white.",
+            "Each row and column must have an equal number of black and white cells."
+        ]
 
     },
     "untangle": {
@@ -296,6 +311,7 @@ export const genreInfo = {
     "none": {
         name: "No puzzle loaded",
         description: "Click a puzzle to start it.",
-        helpLink: ""
+        helpLink: "",
+        special: true
     }
 }
