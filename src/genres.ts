@@ -4,8 +4,10 @@ export const genres = [
     "guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
     "netslide","palisade","pattern","pearl","pegs","range","rect","samegame","signpost",
     "singles","sixteen","slant","solo","tents","towers","tracks","twiddle","undead",
-    "unequal","unruly","untangle","group","none"
+    "unequal","unruly","untangle","group"
 ] as const;
+
+export type GenreKey = typeof genres[number] | "none"
 
 interface ParameterFormatProperty {
     /** Internal identifier for this property */
@@ -51,7 +53,7 @@ interface GenreInfoEntry {
     forbidUndo?: boolean;
 }
 
-export const genreInfo: {[x in typeof genres[number]]: GenreInfoEntry} = {
+export const genreInfo: {[x in GenreKey]: GenreInfoEntry} = {
     "blackbox": {
         name: "Blackbox",
         description: "Use beam reflections to locate the hidden marbles.",

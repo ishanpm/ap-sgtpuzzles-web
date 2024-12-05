@@ -34,6 +34,12 @@ import PuzzleContainer from "./PuzzleContainer.vue";
     padding: 1em;
 }
 
+[data-bs-theme=dark] .filler {
+    border-color: #6e6e6e;
+    background-color: #353535;
+    color: #868686;
+}
+
 .puzzlelist {
     height: 100vh;
     width: 100%;

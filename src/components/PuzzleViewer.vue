@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, shallowRef, useId, useTemplateRef } from 'vue';
-import { Modal } from 'bootstrap';
+import { Modal, Toast } from 'bootstrap';
 import type { GenrePresetElement, GenrePresetList, GenrePresetSubmenuElement } from '@/types/GenrePresetList';
 
 interface PuzzleDialogStringControl {
@@ -30,12 +30,16 @@ type PuzzleDialogControl = PuzzleDialogStringControl | PuzzleDialogChoiceControl
 const id = useId();
 const puzzleFrame = useTemplateRef("puzzleFrame")
 const puzzleModalElem = useTemplateRef("puzzleModalElem")
+const errorToastElem = useTemplateRef("errorToastElem")
 const puzzleModal = shallowRef<Modal | undefined>()
+const errorToast = shallowRef<Toast | undefined>()
 
 const frameSource = ref("about:blank")
 const dialogVisible = ref(false)
 const dialogTitle = ref("")
+const dialogError = ref("")
 const dialogControls = ref<PuzzleDialogControl[]>([])
+const errorText = ref("")
 
 //
 // Public interface
@@ -50,8 +54,6 @@ const currentPreset = defineModel<number>("currentPreset")
 
 function confirmModal() {
     if (dialogVisible.value) {
-        dialogVisible.value = false
-
         for (let elem of dialogControls.value) {
             switch (elem.type) {
                 case "string":
@@ -69,10 +71,9 @@ function confirmModal() {
 
 function cancelModal() {
     if (dialogVisible.value) {
-        dialogVisible.value = false
-
         sendMessage("dialogCancel");
 
+        dialogVisible.value = false
         puzzleModal.value?.hide();
     }
 }
@@ -124,7 +125,11 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
             index
         }
 
-        presetList.value[0].push(newPreset)
+        if (presetList.value[menuId]) {
+            presetList.value[menuId].push(newPreset)
+        } else {
+            presetList.value[menuId] = [newPreset]
+        }
     },
     js_add_preset_submenu(parentId, title, newId) {
         if (!presetList.value) {
@@ -135,13 +140,19 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
             title,
             index: newId
         }
-        
-        presetList.value[0].push(newMenu)
+
+        if (presetList.value[parentId]) {
+            presetList.value[parentId].push(newMenu)
+        } else {
+            presetList.value[parentId] = [newMenu]
+        }
     },
     js_select_preset(index) {
         currentPreset.value = index
     },
-    js_dialog_init() {
+    js_dialog_init(titletext) {
+        dialogTitle.value = titletext;
+        dialogError.value = "";
         dialogControls.value = [];
     },
     js_dialog_string(index: number, title: string, value: string) {
@@ -162,12 +173,22 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
         dialogVisible.value = true
     },
     js_dialog_cleanup() {
-        puzzleModal.value?.hide();
+        if (dialogVisible.value) {
+            dialogVisible.value = false
+            puzzleModal.value?.hide();
+        }
     },
     js_canvas_set_statusbar() {},
     js_canvas_remove_statusbar() {},
     js_canvas_set_size() {},
-    js_error_box() {},
+    js_error_box(text) {
+        if (dialogVisible.value) {
+            dialogError.value = text;
+        } else {
+            errorText.value = text
+            errorToast.value?.show()
+        }
+    },
     js_focus_canvas() {},
     savePuzzleDataCallback() {}
 }
@@ -199,13 +220,16 @@ onMounted(() => {
     if (!puzzleModalElem.value) {
         throw new Error("Puzzle modal not initialized")
     }
-
+    if (!errorToastElem.value) {
+        throw new Error("Error toast not initialized")
+    }
     if (!puzzleFrame.value) {
         throw new Error("Puzzle frame not initialized")
     }
 
     puzzleModal.value = new Modal(puzzleModalElem.value)
     puzzleModalElem.value.addEventListener("hide.bs.modal", onModalHide)
+    errorToast.value = new Toast(errorToastElem.value)
 
     frameSource.value = "puzzleframe.html?g=loopy"
 
@@ -224,14 +248,19 @@ onUnmounted(() => {
     <iframe :src="frameSource" ref="puzzleFrame" class="puzzleframe"></iframe>
 
     <Teleport to="body">
-        <div class="modal fade" tabindex="-1" ref="puzzleModalElem">
+        <div class="modal fade puzzledialog" tabindex="-1" ref="puzzleModalElem">
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h1 :id="`ddialog-title-${id}`">Title</h1>
+                        <h1 :id="`dialog-title-${id}`">{{ dialogTitle }}</h1>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
+                        <div class="alert alert-warning" v-if="dialogError">
+                            <strong>Error</strong>
+                            <br>
+                            {{ dialogError }}
+                        </div>
                         <form>
                             <div v-for="control in dialogControls">
                                 <div v-if="control.type == 'string'" class="mb-3">
@@ -259,6 +288,17 @@ onUnmounted(() => {
             </div>
         </div>
     </Teleport>
+    <Teleport to="#toast-container">
+        <div ref="errorToastElem" data-bs-autohide="false" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto">Error</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+                {{ errorText }}
+            </div>
+        </div>
+    </Teleport>
 </template>
 
 <style>
@@ -266,5 +306,9 @@ onUnmounted(() => {
     border: 2px solid black;
     width: 100%;
     height: 500px;
+}
+
+.puzzledialog h1 {
+    font-size: 150%;
 }
 </style>
