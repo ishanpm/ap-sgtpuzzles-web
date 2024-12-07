@@ -40,16 +40,18 @@ onMounted(() => {
 <template>
     <a class="dropdown" ref="presetDropdown">
         <button class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Type</button>
-        <ul class="dropdown-menu preset-select scroll">
-            <li v-if="breadcrumb.length > 1">
-                <button class="dropdown-item" @click.stop="breadcrumb.pop()">
-                    Back
-                </button>
+        <ul v-if="presetList !== undefined" class="dropdown-menu preset-select scroll">
+            <li v-if="breadcrumb.length > 0">
+                <h5 class="dropdown-header">
+                    <template v-for="(menuId, index) in breadcrumb">
+                        <template v-if="index < breadcrumb.length-1">
+                            <a href="#" @click.stop="breadcrumb.splice(index+1)">{{ presetList?.[menuId]?.title }}</a> &gt; 
+                        </template>
+                        <span v-if="index == breadcrumb.length-1">{{ presetList?.[menuId]?.title }}</span>
+                    </template>
+                </h5>
             </li>
-            <li v-if="breadcrumb.length > 1">
-                <hr class="dropdown-divider">
-            </li>
-            <li v-if="!!presetList" v-for="entry in presetList[currentMenu]">
+            <li v-for="entry in presetList[currentMenu]?.entries">
                 <button v-if="entry.type == 'preset'"
                         class="dropdown-item"
                         :class="{active: currentPreset == entry.index}"

@@ -12,6 +12,11 @@ export interface GenrePresetSubmenuElement {
 
 export type GenrePresetEntry = GenrePresetElement | GenrePresetSubmenuElement
 
+export interface GenrePresetMenu {
+    title: string,
+    entries: GenrePresetEntry[]
+}
+
 export type GenrePresetList = {
-    [menuId: number]: GenrePresetEntry[]
+    [menuId: number]: GenrePresetMenu
 }

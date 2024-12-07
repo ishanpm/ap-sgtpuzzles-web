@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, shallowRef, useId, useTemplateRef } from 'vue';
 import { Modal, Toast } from 'bootstrap';
-import type { GenrePresetElement, GenrePresetList, GenrePresetSubmenuElement } from '@/types/GenrePresetList';
+import type { GenrePresetElement, GenrePresetList, GenrePresetSubmenuElement, GenrePresetMenu } from '@/types/GenrePresetList';
 
 interface PuzzleDialogStringControl {
     type: "string",
@@ -104,7 +104,7 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
     },
     js_init_puzzle() {
         console.log("puzzle viewer: init_puzzle")
-        presetList.value = {0: []}
+        presetList.value = {0: {title: "Presets", entries: []}}
     },
     js_post_init() {
         console.log("puzzle viewer: post_init")
@@ -126,9 +126,10 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
         }
 
         if (presetList.value[menuId]) {
-            presetList.value[menuId].push(newPreset)
+            presetList.value[menuId].entries.push(newPreset)
         } else {
-            presetList.value[menuId] = [newPreset]
+            console.warn("Tried to add preset to menu before initialization")
+            presetList.value[menuId] = {title: "Unknown", entries: [newPreset]}
         }
     },
     js_add_preset_submenu(parentId, title, newId) {
@@ -142,9 +143,21 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
         }
 
         if (presetList.value[parentId]) {
-            presetList.value[parentId].push(newMenu)
+            presetList.value[parentId].entries.push(newMenu)
         } else {
-            presetList.value[parentId] = [newMenu]
+            console.warn("Tried to add submenu to menu before initialization")
+            presetList.value[parentId] = {title: "Unknown", entries: [newMenu]}
+        }
+
+        if (presetList.value[newId]) {
+            console.warn("Adding submenu with already existing ID")
+            presetList.value[newId].title = title
+        } else {
+            let newMenu: GenrePresetMenu = {
+                title,
+                entries: []
+            }
+            presetList.value[newId] = newMenu
         }
     },
     js_select_preset(index) {
