@@ -59,9 +59,9 @@ export const genreInfo: {[x in GenreKey]: GenreInfoEntry} = {
         description: "Use beam reflections to locate the hidden marbles.",
         rules: [
             "Click a wall on the border to fire a beam from it.",
-            "Numbers indicate that a beam leaving from one wall will hit the wall with the same number.",
+            "Numbers indicate that a beam leaving from that wall will hit the wall with the same number.",
             "An H indicates that the beam will hit a marble.",
-            "An R indicates that the beam will be reflected to the same wall.",
+            "An R indicates that the beam will be reflected back to the same wall.",
             "When a beam enters a tile diagonally adjacent to a marble, it will be deflected 90 degrees away from it.",
             "When a beam enters a tile diagonally adjacent to two marbles, it will be reflected back the way it came.",
             "If a marble is diagonally adjacent to a wall, it will reflect beams from that wall back to the same wall.",
@@ -96,7 +96,11 @@ export const genreInfo: {[x in GenreKey]: GenreInfoEntry} = {
     },
     "filling": {
         name: "Filling",
-        description: "Fill the grid with numbers so that each number is connected to that many of itself."
+        description: "Fill the grid with numbers so that each number is connected to that many of itself.",
+        rules: [
+            "Every cell must have a number.",
+            "There may be unclued regions."
+        ]
     },
     "flip": {
         name: "Flip",
@@ -108,7 +112,11 @@ export const genreInfo: {[x in GenreKey]: GenreInfoEntry} = {
     },
     "galaxies": {
         name: "Galaxies",
-        description: "Divide the grid into rotationally symmetric regions."
+        description: "Divide the grid into rotationally symmetric regions.",
+        rules: [
+            "Each region must contain exactly one circle.",
+            "Each region must have 180 degree rotational symmetry around its circle."
+        ]
     },
     "group": {
         name: "Group",
@@ -186,7 +194,7 @@ export const genreInfo: {[x in GenreKey]: GenreInfoEntry} = {
     },
     "pattern": {
         name: "Pattern",
-        description: "Shade some cells so that each row and column has blocks of the indicated lengths."
+        description: "Shade some cells so that each row and column has shaded blocks of the indicated lengths."
     },
     "pearl": {
         name: "Pearl",
@@ -237,7 +245,12 @@ export const genreInfo: {[x in GenreKey]: GenreInfoEntry} = {
     },
     "slant": {
         name: "Slant",
-        description: "Draw a slant in each cell so each clues touches the given number of lines."
+        description: "Draw a slant in each cell so each clues touches the given number of lines.",
+        rules: [
+            "Each cell must contain a slant.",
+            "Clues represent the number of lines that a given vertex touches.",
+            "There cannot be any closed loops."
+        ]
     },
     "solo": {
         name: "Solo",

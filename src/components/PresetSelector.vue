@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { type GenrePresetList, type GenrePresetElement } from '@/types/GenrePresetList';
-import { onMounted, onUnmounted, ref, useTemplateRef, watch, watchEffect } from 'vue';
+import { Dropdown } from 'bootstrap';
+import { onMounted, onUnmounted, ref, shallowRef, useTemplateRef, watch, watchEffect } from 'vue';
 
 const presetList = defineModel<GenrePresetList>("presetList")
 const currentPreset = defineModel<number>("currentPreset")
-const presetDropdown = useTemplateRef("presetDropdown")
+const presetDropdownElem = useTemplateRef("presetDropdownElem")
+const presetDropdown = shallowRef<Dropdown>()
 
 const currentMenu = ref(0)
 const breadcrumb = ref([0])
@@ -25,12 +27,18 @@ function selectPreset(index: number){
     emit("selected", index)
 }
 
+function updateDropdown() {
+    presetDropdown.value?.update()
+}
+
 onMounted(() => {
-    if (!presetDropdown.value) {
+    if (!presetDropdownElem.value) {
         throw new Error("Preset dropdown not present")
     }
 
-    presetDropdown.value.addEventListener("hidden.bs.dropdown", (event) => {
+    presetDropdown.value = new Dropdown(presetDropdownElem.value)
+
+    presetDropdownElem.value.addEventListener("hidden.bs.dropdown", (_event) => {
         breadcrumb.value = [0];
     })
 })
@@ -38,14 +46,14 @@ onMounted(() => {
 </script>
 
 <template>
-    <a class="dropdown" ref="presetDropdown">
+    <a class="dropdown" ref="presetDropdownElem">
         <button class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown">Type</button>
         <ul v-if="presetList !== undefined" class="dropdown-menu preset-select scroll">
             <li v-if="breadcrumb.length > 0">
                 <h5 class="dropdown-header">
                     <template v-for="(menuId, index) in breadcrumb">
                         <template v-if="index < breadcrumb.length-1">
-                            <a href="#" @click.stop="breadcrumb.splice(index+1)">{{ presetList?.[menuId]?.title }}</a> &gt; 
+                            <a href="#" @click.stop="breadcrumb.splice(index+1); updateDropdown()">{{ presetList?.[menuId]?.title }}</a> &gt; 
                         </template>
                         <span v-if="index == breadcrumb.length-1">{{ presetList?.[menuId]?.title }}</span>
                     </template>
@@ -58,8 +66,9 @@ onMounted(() => {
                         @click="selectPreset(entry.index)">
                     {{ entry.title }}
                 </button>
-                <button v-if="entry.type == 'submenu'" class="dropdown-item submenu" @click.stop="(e) => breadcrumb.push(entry.index)">
+                <button v-if="entry.type == 'submenu'" class="dropdown-item submenu" @click.stop="breadcrumb.push(entry.index); updateDropdown()">
                     {{ entry.title }}
+                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
                 </button>
             </li>
         </ul>
@@ -72,6 +81,13 @@ onMounted(() => {
     overflow-y: auto;
 }
 
+.preset-select .submenu {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+/*
 .preset-select .submenu::after {
     display: inline-block;
     margin-left: 0.255em;
@@ -83,4 +99,5 @@ onMounted(() => {
     border-bottom: 0.3em solid transparent;
     border-left: 0.3em solid;
 }
+*/
 </style>

@@ -37,6 +37,27 @@ function loadPuzzle(genre) {
     document.head.appendChild(elem)
 }
 
+function puzzleFromId() {
+    command(0);
+}
+
+function puzzleFromSeed() {
+    command(1);
+}
+
+function setPreset(id) {
+    menuform.elements["preset"].value = id;
+    command(2);
+}
+
+function dialogConfirm() {
+    command(3);
+}
+
+function dialogCancel() {
+    command(4);
+}
+
 function newPuzzle() {
     solved = false;
     command(5);
@@ -58,9 +79,8 @@ function solvePuzzle() {
     command(9);
 }
 
-function setPreset(id) {
-    menuform.elements["preset"].value = id;
-    command(2);
+function showPreferences() {
+    command(10);
 }
 
 function setNewGameEnabled(allow) {
@@ -73,18 +93,6 @@ function dialogReturnString(index, val) {
 
 function dialogReturnInt(index, val) {
     dlg_return_ival(index, val);
-}
-
-function dialogConfirm() {
-    command(3);
-}
-
-function dialogCancel() {
-    command(4);
-}
-
-function showPreferences() {
-    command(10);
 }
 
 function savePuzzleData() {
@@ -116,7 +124,7 @@ function loadPuzzleData(data) {
 
 const messageHandlers = {
     loadPuzzle, setPreset, showPreferences,
-    newPuzzle, restartPuzzle, undoPuzzle, redoPuzzle, solvePuzzle,
+    newPuzzle, puzzleFromId, puzzleFromSeed, restartPuzzle, undoPuzzle, redoPuzzle, solvePuzzle,
     dialogReturnString, dialogReturnInt, dialogConfirm, dialogCancel,
     setNewGameEnabled,
     savePuzzleData, loadPuzzleData

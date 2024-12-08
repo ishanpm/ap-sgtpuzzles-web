@@ -1,11 +1,20 @@
 <script setup lang="ts">
+import { genreInfo, genres } from "@/genres";
 import PuzzleContainer from "./PuzzleContainer.vue";
+import { onMounted, ref, useTemplateRef } from "vue";
 
+const puzzleContainer = useTemplateRef("puzzleContainer")
+
+const selectedIndex = ref(0)
+
+onMounted(() => {
+    puzzleContainer.value?.switchPuzzle(genres[0])
+})
 </script>
 
 <template>
     <div>
-        <nav class="navbar navbar-expand-lg bg-body-tertiary">
+        <nav class="navbar sticky-top navbar-expand-lg bg-body-tertiary">
             <div class="container-fluid">
                 <a class="navbar-brand" href="#">AP Puzzles</a>
             </div>
@@ -13,11 +22,19 @@ import PuzzleContainer from "./PuzzleContainer.vue";
         <div class="container content">
             <div class="row">
                 <div class="col-4">
-                    <div class="filler puzzlelist sticky-top">Puzzle list</div>
+                    <div class="puzzlelist list-group list-group-flush">
+                        <a v-for="(genre, index) in genres"
+                                class="list-group-item"
+                                :class="{'active': index == selectedIndex}"
+                                href="#"
+                                @click="selectedIndex=index; puzzleContainer?.switchPuzzle(genre)">
+                            {{ genreInfo[genre].name }}
+                        </a>
+                    </div>
                 </div>
                 <div class="col-8 main">
-                    <PuzzleContainer />
-                    <div class="filler tall"> Puzzle info</div>
+                    <PuzzleContainer ref="puzzleContainer"/>
+                    <div class="filler tall">Puzzle info</div>
                 </div>
             </div>
         </div>
@@ -41,9 +58,15 @@ import PuzzleContainer from "./PuzzleContainer.vue";
 }
 
 .puzzlelist {
-    height: 100vh;
+    position: sticky;
+    height: calc(100vh - 2rem - 56px);
     width: 100%;
     z-index: 1;
+    top: calc(1rem + 56px);
+    margin-top: 1rem;
+    overflow-y: scroll;
+    border-radius: var(--bs-border-radius);
+    border: var(--bs-list-group-border-width) solid var(--bs-list-group-border-color);;
 }
 
 .tall {

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, shallowRef, useId, useTemplateRef } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref, shallowRef, useId, useTemplateRef } from 'vue';
 import { Modal, Toast } from 'bootstrap';
 import type { GenrePresetElement, GenrePresetList, GenrePresetSubmenuElement, GenrePresetMenu } from '@/types/GenrePresetList';
+import { newPuzzleState, type PuzzleState } from '@/types/PuzzleState';
+import type { GenreKey } from '@/genres';
 
 interface PuzzleDialogStringControl {
     type: "string",
@@ -34,6 +36,7 @@ const errorToastElem = useTemplateRef("errorToastElem")
 const puzzleModal = shallowRef<Modal | undefined>()
 const errorToast = shallowRef<Toast | undefined>()
 
+const puzzleState = ref<PuzzleState>(newPuzzleState())
 const frameSource = ref("about:blank")
 const dialogVisible = ref(false)
 const dialogTitle = ref("")
@@ -41,52 +44,54 @@ const dialogError = ref("")
 const dialogControls = ref<PuzzleDialogControl[]>([])
 const errorText = ref("")
 
+const puzzleFrameBase = "puzzleframe.html"
+
 //
 // Public interface
 //
 
 defineExpose({
-    newPuzzle, showPreferences, selectPreset
+    switchPuzzle, loadPuzzleFromString, showPreferences, selectPreset,
+    newPuzzle, puzzleFromId, puzzleFromSeed, restartPuzzle, solve, undo, redo
 })
 
-const presetList = defineModel<GenrePresetList>("presetList")
-const currentPreset = defineModel<number>("currentPreset")
+const emit = defineEmits<{
+    updatePuzzleState: [state: PuzzleState]
+}>()
 
-function confirmModal() {
-    if (dialogVisible.value) {
-        for (let elem of dialogControls.value) {
-            switch (elem.type) {
-                case "string":
-                    sendMessage("dialogReturnString", elem.index, elem.value); break;
-                case "choice":
-                    sendMessage("dialogReturnInt", elem.index, elem.value); break;
-                case "boolean":
-                    sendMessage("dialogReturnInt", elem.index, elem.value ? 1 : 0); break;
-            }
-        }
-        sendMessage("dialogConfirm");
-        //TODO: Lock modal while waiting for cleanup (in case of error)
+async function switchPuzzle(genre: GenreKey, seedOrId?: string, singleMode?: boolean) {
+    let queryFragments = [];
+
+    if (genre != "none") {
+        queryFragments.push({key: "g", value: genre});
+    } else {
+        singleMode = false;
     }
+
+    if (seedOrId) {
+        queryFragments.push({key: "i", value: seedOrId});
+    }
+
+    if (singleMode) {
+        queryFragments.push({key: "s", value: "true"});
+    }
+
+    let queryString = queryFragments.map(e => `${e.key}=${encodeURIComponent(e.value)}`).join("&");
+
+    frameSource.value = "";
+    await nextTick();
+    frameSource.value = `${puzzleFrameBase}?${queryString}`;
+
+    puzzleState.value = newPuzzleState();
+    puzzleState.value.genre = genre;
+    puzzleState.value.singleMode = !!singleMode;
+
+    emit("updatePuzzleState", puzzleState.value)
 }
 
-function cancelModal() {
-    if (dialogVisible.value) {
-        sendMessage("dialogCancel");
-
-        dialogVisible.value = false
-        puzzleModal.value?.hide();
-    }
-}
-
-function onModalHide() {
-    if (dialogVisible.value) {
-        dialogVisible.value = false
-        sendMessage("dialogCancel");
-    }
-}
-
-function newPuzzle() {
-    sendMessage("newPuzzle")
+function loadPuzzleFromString(genre: GenreKey, saveData: string, singleMode?: boolean) {
+    //TODO
+    switchPuzzle(genre, undefined, singleMode)
 }
 
 function showPreferences() {
@@ -94,9 +99,45 @@ function showPreferences() {
 }
 
 function selectPreset(index: number) {
-    currentPreset.value = index
+    if (!puzzleState.value) {
+        throw Error("Puzzle not initialized")
+    }
+
+    puzzleState.value.currentPreset = index
     sendMessage("setPreset", index)
 }
+
+function newPuzzle() {
+    sendMessage("newPuzzle")
+}
+
+function puzzleFromId() {
+    sendMessage("puzzleFromId")
+}
+
+function puzzleFromSeed() {
+    sendMessage("puzzleFromSeed")
+}
+
+function restartPuzzle() {
+    sendMessage("restartPuzzle")
+}
+
+function solve() {
+    sendMessage("solvePuzzle")
+}
+
+function undo() {
+    sendMessage("undoPuzzle")
+}
+
+function redo() {
+    sendMessage("redoPuzzle")
+}
+
+//
+// Puzzle Frame Management
+//
 
 const messageHandlers: {[command: string]: (...args: any[]) => void | undefined} = {
     ready() {
@@ -104,20 +145,35 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
     },
     js_init_puzzle() {
         console.log("puzzle viewer: init_puzzle")
-        presetList.value = {0: {title: "Presets", entries: []}}
     },
     js_post_init() {
         console.log("puzzle viewer: post_init")
     },
-    js_update_permalinks() {},
-    js_enable_undo_redo() {},
-    js_remove_solve_button() {},
-    js_update_status() {},
+    js_update_permalinks(puzzleDesc?: string, puzzleSeed?: string) {
+        puzzleState.value.id = puzzleDesc;
+        puzzleState.value.seed = puzzleSeed;
+
+        if (puzzleSeed) {
+            puzzleState.value.params = puzzleSeed.split('#')[0]
+        } else if (puzzleDesc) {
+            puzzleState.value.params = puzzleDesc.split(':')[0]
+        } else {
+            puzzleState.value.params = undefined
+        }
+    },
+    js_enable_undo_redo(enableUndo: boolean, enableRedo: boolean) {
+        puzzleState.value.canUndo = enableUndo;
+        puzzleState.value.canRedo = enableRedo;
+    },
+    js_remove_solve_button() {
+        puzzleState.value.canSolve = false;
+    },
+    js_update_status(status) {
+        console.log("puzzle viewer: update status", status)
+    },
     js_update_key_labels() {},
     js_add_preset(menuId: number, title: string, index: number) {
-        if (!presetList.value) {
-            throw new Error("Tried to add preset before initialization")
-        }
+        const presets = puzzleState.value.presets;
 
         let newPreset: GenrePresetElement = {
             type: "preset",
@@ -125,43 +181,42 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
             index
         }
 
-        if (presetList.value[menuId]) {
-            presetList.value[menuId].entries.push(newPreset)
+        if (presets[menuId]) {
+            presets[menuId].entries.push(newPreset)
         } else {
             console.warn("Tried to add preset to menu before initialization")
-            presetList.value[menuId] = {title: "Unknown", entries: [newPreset]}
+            presets[menuId] = {title: "Unknown", entries: [newPreset]}
         }
     },
     js_add_preset_submenu(parentId, title, newId) {
-        if (!presetList.value) {
-            throw new Error("Tried to add preset submenu before initialization")
-        }
+        const presets = puzzleState.value.presets;
+
         let newMenu: GenrePresetSubmenuElement = {
             type: "submenu",
             title,
             index: newId
         }
 
-        if (presetList.value[parentId]) {
-            presetList.value[parentId].entries.push(newMenu)
+        if (presets[parentId]) {
+            presets[parentId].entries.push(newMenu)
         } else {
             console.warn("Tried to add submenu to menu before initialization")
-            presetList.value[parentId] = {title: "Unknown", entries: [newMenu]}
+            presets[parentId] = {title: "Unknown", entries: [newMenu]}
         }
 
-        if (presetList.value[newId]) {
+        if (presets[newId]) {
             console.warn("Adding submenu with already existing ID")
-            presetList.value[newId].title = title
+            presets[newId].title = title
         } else {
             let newMenu: GenrePresetMenu = {
                 title,
                 entries: []
             }
-            presetList.value[newId] = newMenu
+            presets[newId] = newMenu
         }
     },
     js_select_preset(index) {
-        currentPreset.value = index
+        puzzleState.value.currentPreset = index
     },
     js_dialog_init(titletext) {
         dialogTitle.value = titletext;
@@ -191,8 +246,12 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
             puzzleModal.value?.hide();
         }
     },
-    js_canvas_set_statusbar() {},
-    js_canvas_remove_statusbar() {},
+    js_canvas_set_statusbar(message) {
+        puzzleState.value.statusMessage = message
+    },
+    js_canvas_remove_statusbar() {
+        puzzleState.value.statusMessage = undefined
+    },
     js_canvas_set_size() {},
     js_error_box(text) {
         if (dialogVisible.value) {
@@ -229,6 +288,43 @@ function sendMessage(command: string, ...args: any[]) {
     puzzleFrame.value.contentWindow?.postMessage([command, ...args])
 }
 
+//
+// UI Management
+//
+
+function confirmModal() {
+    if (dialogVisible.value) {
+        for (let elem of dialogControls.value) {
+            switch (elem.type) {
+                case "string":
+                    sendMessage("dialogReturnString", elem.index, elem.value); break;
+                case "choice":
+                    sendMessage("dialogReturnInt", elem.index, elem.value); break;
+                case "boolean":
+                    sendMessage("dialogReturnInt", elem.index, elem.value ? 1 : 0); break;
+            }
+        }
+        sendMessage("dialogConfirm");
+        //TODO: Lock modal while waiting for cleanup (in case of error)
+    }
+}
+
+function cancelModal() {
+    if (dialogVisible.value) {
+        sendMessage("dialogCancel");
+
+        dialogVisible.value = false
+        puzzleModal.value?.hide();
+    }
+}
+
+function onModalHide() {
+    if (dialogVisible.value) {
+        dialogVisible.value = false
+        sendMessage("dialogCancel");
+    }
+}
+
 onMounted(() => {
     if (!puzzleModalElem.value) {
         throw new Error("Puzzle modal not initialized")
@@ -244,11 +340,9 @@ onMounted(() => {
     puzzleModalElem.value.addEventListener("hide.bs.modal", onModalHide)
     errorToast.value = new Toast(errorToastElem.value)
 
-    frameSource.value = "puzzleframe.html?g=loopy"
+    switchPuzzle("none")
 
     window.addEventListener("message", processMessage)
-
-    presetList.value = [];
 })
 
 onUnmounted(() => {
@@ -259,6 +353,8 @@ onUnmounted(() => {
 
 <template>
     <iframe :src="frameSource" ref="puzzleFrame" class="puzzleframe"></iframe>
+
+    <div></div>
 
     <Teleport to="body">
         <div class="modal fade puzzledialog" tabindex="-1" ref="puzzleModalElem">
@@ -315,8 +411,7 @@ onUnmounted(() => {
 </template>
 
 <style>
-.puzzleframe {
-    border: 2px solid black;
+.puzzleframe {  
     width: 100%;
     height: 500px;
 }
