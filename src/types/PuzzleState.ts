@@ -1,11 +1,11 @@
-import type { GenreKey } from "@/genres";
+import { genres, isGenre, type GenreKey } from "@/genres";
 import type { GenrePresetList } from "./GenrePresetList";
 
 export interface PuzzleState {
     genre: GenreKey
     params?: string
     seed?: string
-    id?: string
+    index?: string
     presets: GenrePresetList
     currentPreset: number
 
@@ -28,4 +28,35 @@ export function newPuzzleState(): PuzzleState {
         canUndo: false,
         canRedo: false,
     }
+}
+
+export function puzzleFromArchipelagoString(genreAndParams: string, baseSeed: string, index: number, options: any) {
+    let seedPrefix = ""+index;
+    seedPrefix = seedPrefix.padStart(3, "0");
+    let seed = `${seedPrefix}${baseSeed}`;
+
+    let genreParamsMatch = /^([^:]*)(:(.*))?$/.exec(genreAndParams);
+
+    if (genreParamsMatch === null) {
+        throw new Error(`Couldn't parse puzzle description: ${genreAndParams}`)
+    }
+
+    let genreStr = genreParamsMatch[1];
+
+    if (!isGenre(genreStr)) {
+        throw new Error("Invalid genre")
+    }
+
+    options ??= {};
+
+    options.puzzleSeed = `${options.params}#${seed}`;
+    options.index = index;
+
+    let newPuzzle = newPuzzleState();
+    newPuzzle.genre = genreStr;
+    newPuzzle.params = genreParamsMatch[3] ?? "";
+    newPuzzle.seed = `${newPuzzle.params}#${seed}`
+    newPuzzle.index = ""+index;
+
+    return newPuzzle;
 }

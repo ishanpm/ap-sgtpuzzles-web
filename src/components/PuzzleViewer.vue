@@ -150,7 +150,7 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
         console.log("puzzle viewer: post_init")
     },
     js_update_permalinks(puzzleDesc?: string, puzzleSeed?: string) {
-        puzzleState.value.id = puzzleDesc;
+        puzzleState.value.index = puzzleDesc;
         puzzleState.value.seed = puzzleSeed;
 
         if (puzzleSeed) {

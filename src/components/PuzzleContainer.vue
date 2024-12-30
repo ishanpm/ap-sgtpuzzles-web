@@ -39,7 +39,8 @@ function copyParams() {
     paramsCopied.value = true;
     paramsLink.value?.blur()
 
-    paramsCopiedFadeTimeout = setTimeout(() => paramsCopied.value = false, 2000)
+    clearTimeout(paramsCopiedFadeTimeout)
+    paramsCopiedFadeTimeout = setTimeout(() => paramsCopied.value = false, 10000)
 }
 
 watch(() => puzzleState.value?.params, () => {
@@ -72,7 +73,7 @@ onMounted(() => {
                     @click="copyParams()"
                     class="icon-link"
                     data-bs-toggle="tooltip"
-                    data-bs-placement="bottom"
+                    data-bs-placement="right"
                     data-bs-title="Copy to clipboard">
                 {{ puzzleState?.params }}
                 <i class="bi" :class="paramsCopied ? 'bi-clipboard-check-fill' : 'bi-clipboard'"></i>

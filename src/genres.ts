@@ -9,6 +9,11 @@ export const genres = [
 
 export type GenreKey = typeof genres[number] | "none"
 
+export function isGenre(str: string): str is GenreKey {
+    const genresAsStr = genres as readonly string[]
+    return genresAsStr.includes(str)
+}
+
 interface ParameterFormatProperty {
     /** Internal identifier for this property */
     key: string

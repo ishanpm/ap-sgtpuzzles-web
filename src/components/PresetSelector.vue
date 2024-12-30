@@ -77,7 +77,7 @@ onMounted(() => {
 
 <style lang="scss">
 .preset-select {
-    max-height: 30em;
+    max-height: 32em;
     overflow-y: auto;
 }
 
@@ -86,18 +86,4 @@ onMounted(() => {
     flex-direction: row;
     justify-content: space-between;
 }
-
-/*
-.preset-select .submenu::after {
-    display: inline-block;
-    margin-left: 0.255em;
-    right: 0.255em;
-    vertical-align: 0.255em;
-    content: "";
-    border-top: 0.3em solid transparent;
-    border-right: 0;
-    border-bottom: 0.3em solid transparent;
-    border-left: 0.3em solid;
-}
-*/
 </style>
