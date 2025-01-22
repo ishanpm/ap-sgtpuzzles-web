@@ -2,7 +2,7 @@
 import { genreInfo, genres } from "@/genres";
 import PuzzleContainer from "./PuzzleContainer.vue";
 import { onMounted, reactive, ref, shallowRef, useId, useTemplateRef } from "vue";
-import { PuzzlesAPConnection } from "@/types/PuzzlesAPConnection";
+import { PuzzlesAPConnection } from "@/services/PuzzlesAPConnection";
 import { GameModel } from "@/types/GameModel";
 
 const puzzleContainer = useTemplateRef("puzzleContainer")

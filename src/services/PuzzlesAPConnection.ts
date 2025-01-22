@@ -1,7 +1,8 @@
 import { GameModel } from "@/types/GameModel";
 import { Client, ITEMS_HANDLING_FLAGS, type ConnectionInformation, type JSONSerializableData, type PrintJSONPacket, type ReceivedItemsPacket, type RetrievedPacket, type RoomUpdatePacket, type ServerPacket, type SetReplyPacket } from "archipelago.js"
 import { reactive } from "vue";
-import { puzzleFromArchipelagoString, type PuzzleState } from "./PuzzleState";
+import { PuzzleState } from "../types/PuzzleState";
+import { PuzzleData, puzzleFromArchipelagoString } from "@/types/PuzzleData";
 
 export class PuzzlesAPConnection {
     client: Client
@@ -42,7 +43,7 @@ export class PuzzlesAPConnection {
         // Load puzzle data
 
         if (this.model.puzzles.length == 0) {
-            let newPuzzles: PuzzleState[] = []
+            let newPuzzles: PuzzleData[] = []
             let slotData = this.client.data.slotData
 
             if (typeof slotData.puzzles != "object" || !slotData.puzzles?.length) {
