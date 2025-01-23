@@ -41,8 +41,10 @@ export class GameSave {
         this.host = options.host ?? "";
         this.port = options.port ?? 0;
         this.player = options.player ?? "";
+        this.password = options.password ?? "";
         this.baseSeed = "" + (options.baseSeed ?? "");
 
+        this.description = "";
         this.finished = options.finished ?? false;
 
         this.solveTarget = options.solveTarget ?? null;
@@ -64,6 +66,8 @@ export class GameSave {
          * @type {boolean[]}
          */
         this.puzzleLocked = options.puzzleLocked ?? Array(this.puzzles.length).fill(true)
+
+        this.updateDescription();
     }
 
     async save() {
@@ -140,8 +144,12 @@ export class GameSave {
         return;
     }
 
+    updateDescription() {
+        this.description = this.toString();
+    }
+
     toString() {
-        return this.filename ?? `${this.player} (${this.host}:${this.port}), ${this.puzzles.length} puzzles`;
+        return this.filename ?? `${this.player} (${this.host}:${this.port}${this.password ? '*' : ''}), ${this.puzzles.length} puzzles`;
     }
 
     toObject() {
@@ -151,6 +159,7 @@ export class GameSave {
             host: this.host,
             port: this.port,
             player: this.player,
+            password: this.password,
             baseSeed: this.baseSeed,
             finished: this.finished,
             puzzles: this.puzzles.slice(),

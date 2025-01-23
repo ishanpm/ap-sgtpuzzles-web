@@ -343,8 +343,21 @@ function initStores() {
         hostname: config.defaultHost,
         port: "38281",
         player: "Player1",
+        password: "",
         connect() {
-            createFile(this.hostname, +this.port, this.player);
+            createFile(this.hostname, +this.port, this.player, this.password);
+        },
+        replaceConnectionInfo() {
+            let currentFile = Alpine.store("gamesaves").current;
+            let newConnection = {
+                host: this.hostname,
+                port: +this.port,
+                player: this.player,
+                password: this.password
+            }
+            if (currentFile && currentFile.id != -1) {
+                loadFile(currentFile, false, newConnection)
+            }
         }
     })
 
@@ -718,7 +731,7 @@ function syncAPStatus() {
     }
 }
 
-async function createFile(hostname, port, player) {
+async function createFile(hostname, port, player, password) {
     const gamesaves = Alpine.store("gamesaves")
     gamesaves.connecting = true;
 
@@ -727,7 +740,7 @@ async function createFile(hostname, port, player) {
     gamesaves.apError = false;
 
     try {
-        await connectAP(hostname, port, player);
+        await connectAP(hostname, port, player, password);
     } catch (e) {
         alert("Couldn't connect to Archipelago server.");
         console.error("Couldn't connect to Archipelago server");
@@ -745,6 +758,7 @@ async function createFile(hostname, port, player) {
         host: hostname,
         port: port,
         player: player,
+        password: password,
         puzzles: slotData.puzzles,
         baseSeed: "" + slotData.world_seed,
         solveTarget: slotData.solve_target
@@ -767,7 +781,7 @@ async function createFile(hostname, port, player) {
  * 
  * @param {SaveData.GameSave} file 
  */
-async function loadFile(file, secretMode) {
+async function loadFile(file, secretMode, newConnection) {
     const gamesaves = Alpine.store("gamesaves")
     gamesaves.connecting = true;
     gamesaves.current = file;
@@ -777,12 +791,30 @@ async function loadFile(file, secretMode) {
     gamesaves.apError = false;
     let connectOk = false;
 
-    if (file.host) {
+    let host, port, player, password;
+
+    if (newConnection) {
+        host = newConnection.host ?? file.host;
+        port = newConnection.port ?? file.port;
+        player = newConnection.player ?? file.player;
+        password = newConnection.password ?? file.password;
+    } else {
+        host = file.host;
+        port = file.port;
+        player = file.player;
+        password = file.password;
+    }
+
+    if (host) {
         try {
-            await connectAP(file.host, file.port, file.player);
+            await connectAP(host, port, player, password);
             connectOk = true;
         } catch (e) {
-            alert("Couldn't connect to Archipelago server. (You can still solve unlocked puzzles on this file.)")
+            if (newConnection) {
+                alert("Couldn't connect to Archipelago server. Reload this file to connect with previous information.")
+            } else {
+                alert("Couldn't connect to Archipelago server. (You can still solve unlocked puzzles on this file.)")
+            }
             gamesaves.apError = true;
             console.error(e);
         }
@@ -804,11 +836,25 @@ async function loadFile(file, secretMode) {
         }
 
         if (anyMismatch()) {
-            alert("The Archipelago server data doesn't match this save file. (You can still solve unlocked puzzles.)")
+            if (newConnection) {
+                alert("The Archipelago server data doesn't match this save file. Reload this file to connect with previous information.")
+            } else {
+                alert("The Archipelago server data doesn't match this save file. (You can still solve unlocked puzzles.)")
+            }
             disconnectAP();
             connectOk = false;
             gamesaves.apError = true;
         }
+    }
+
+    if (newConnection && connectOk) {
+        file.host = host;
+        file.port = port;
+        file.player = player;
+        file.password = password;
+
+        file.updateDescription();
+        file.save();
     }
 
     await clearPuzzle();
@@ -868,7 +914,7 @@ function logEvent(event) {
     console.log(event);
 }
 
-async function connectAP(hostname, port, player) {
+async function connectAP(hostname, port, player, password) {
     if (!client) {
         client = new Client();
         window.client = client;
@@ -886,6 +932,7 @@ async function connectAP(hostname, port, player) {
         port: port,
         game: "Simon Tatham's Portable Puzzle Collection",
         name: player,
+        password: password,
         items_handling: ITEMS_HANDLING_FLAGS.REMOTE_ALL,
     };
 

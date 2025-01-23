@@ -9,11 +9,13 @@
     <div class="content">
         <div class="left-pane">
             <div class="file-selector">
-                <form x-data="$store.connectionInfo" @submit.prevent="if (!$store.gamesaves.connecting) connect()">
+                <form x-data="$store.connectionInfo" @submit.prevent>
                     <label>Host: <input x-model="hostname"></label><br>
                     <label>Port: <input x-model="port"></label><br>
                     <label>Player: <input x-model="player"></label><br>
-                    <button type="submit" :disabled="$store.gamesaves.connecting">Connect</button>
+                    <label>Password: <input x-model="password" type="password"></label><br>
+                    <button :disabled="$store.gamesaves.connecting" @click="if (!$store.gamesaves.connecting) connect()">New file</button>
+                    <button :disabled="$store.gamesaves.connecting || !$store.gamesaves.current || $store.gamesaves.current.id == -1" @click="if (!$store.gamesaves.connecting) replaceConnectionInfo()">Reconnect current file</button>
                 </form>
                 <div class="spacer"></div>
                 <ul class="file-list" x-data="$store.gamesaves">
@@ -21,7 +23,7 @@
                         <li>
                             <button class="file" :class="[file == current ? 'selected' : null, apError ? 'error' : null]"
                             @click="loadFile(file, $event.shiftKey)" :disabled="connecting">
-                                <span x-text="file.toString()"></span>
+                                <span x-text="file.description"></span>
                             </button>
                             <template x-if="file.id > -1">
                                 <button class="file-delete" @click="deleteFile(file)" :disabled="connecting">X</button>
