@@ -5,6 +5,7 @@ export class PuzzleState {
     genre: GenreKey
     params?: string
     seed?: string
+    id?: string
     presets: GenrePresetList
     currentPreset: number
 

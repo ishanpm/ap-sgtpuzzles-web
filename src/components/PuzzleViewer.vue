@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, ref, shallowRef, useId, useTemplateRef } from 'vue';
 import { Modal, Toast } from 'bootstrap';
-import type { GenrePresetElement, GenrePresetList, GenrePresetSubmenuElement, GenrePresetMenu } from '@/types/GenrePresetList';
-import { newPuzzleState, type PuzzleState } from '@/types/PuzzleState';
+import type { GenrePresetElement, GenrePresetSubmenuElement, GenrePresetMenu } from '@/types/GenrePresetList';
+import { PuzzleState } from '@/types/PuzzleState';
 import type { GenreKey } from '@/genres';
 
 interface PuzzleDialogStringControl {
@@ -36,7 +36,7 @@ const errorToastElem = useTemplateRef("errorToastElem")
 const puzzleModal = shallowRef<Modal | undefined>()
 const errorToast = shallowRef<Toast | undefined>()
 
-const puzzleState = ref<PuzzleState>(newPuzzleState())
+const puzzleState = ref<PuzzleState>(new PuzzleState())
 const frameSource = ref("about:blank")
 const dialogVisible = ref(false)
 const dialogTitle = ref("")
@@ -82,7 +82,7 @@ async function switchPuzzle(genre: GenreKey, seedOrId?: string, singleMode?: boo
     await nextTick();
     frameSource.value = `${puzzleFrameBase}?${queryString}`;
 
-    puzzleState.value = newPuzzleState();
+    puzzleState.value = new PuzzleState();
     puzzleState.value.genre = genre;
     puzzleState.value.singleMode = !!singleMode;
 
@@ -150,7 +150,7 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
         console.log("puzzle viewer: post_init")
     },
     js_update_permalinks(puzzleDesc?: string, puzzleSeed?: string) {
-        puzzleState.value.index = puzzleDesc;
+        puzzleState.value.id = puzzleDesc;
         puzzleState.value.seed = puzzleSeed;
 
         if (puzzleSeed) {
