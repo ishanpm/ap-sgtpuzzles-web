@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { genreInfo, genres } from "@/genres";
 import PuzzleContainer from "./PuzzleContainer.vue";
-import { onMounted, reactive, ref, shallowRef, useId, useTemplateRef } from "vue";
-import { PuzzlesAPConnection } from "@/services/PuzzlesAPConnection";
+import { inject, onMounted, reactive, ref, shallowRef, useId, useTemplateRef } from "vue";
+import { PuzzlesAPConnection, puzzlesAPConnectionKey } from "@/services/PuzzlesAPConnection";
 import { GameModel } from "@/types/GameModel";
 
 const puzzleContainer = useTemplateRef("puzzleContainer")
@@ -15,7 +15,7 @@ const connectionPlayer = ref("Player1")
 
 const errorText = ref("")
 
-const apConnection = shallowRef<PuzzlesAPConnection>()
+const apConnection = inject(puzzlesAPConnectionKey) as PuzzlesAPConnection
 const gameModel = ref(new GameModel())
 
 const selectedIndex = ref(0)
@@ -25,10 +25,9 @@ function connect() {
         // TOOO disconnect existing
     }
 
-    apConnection.value = new PuzzlesAPConnection();
-    apConnection.value.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)
+    apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)
 
-    gameModel.value = apConnection.value.model
+    gameModel.value = apConnection.model
     
     Object.assign(window, {apConnection: apConnection})
 }
@@ -71,10 +70,10 @@ onMounted(() => {
                         <div class="puzzlelist list-group list-group-flush">
                             <a v-for="(puzzle, index) in gameModel.puzzles"
                                     class="list-group-item"
-                                    :class="{'active': index == selectedIndex}"
+                                    :class="{'active': index == selectedIndex, 'disabled': puzzle.locked}"
                                     href="#"
                                     @click="selectedIndex=index; puzzleContainer?.switchPuzzle(puzzle.genre, puzzle.seed, true)">
-                                {{ genreInfo[puzzle.genre].name }}
+                                {{ puzzle.index }}: {{ genreInfo[puzzle.genre].name }}
                             </a>
                         </div>
                     </div>
