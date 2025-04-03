@@ -18,8 +18,13 @@ const paramsCopied = ref(false)
 let paramsCopiedFadeTimeout: number;
 
 defineExpose({
+    puzzleState,
     switchPuzzle
 })
+
+defineEmits<{
+    solved: []
+}>()
 
 function switchPuzzle(genre: GenreKey, seedOrId?: string, singleMode?: boolean) {
     if (!puzzleViewer.value) {
@@ -106,7 +111,7 @@ onMounted(() => {
             </div>
         </div>
         <div class="puzzle-inner-container rounded bg-secondary-subtle">
-            <PuzzleViewer ref="puzzleViewer" @update-puzzle-state="updatePuzzleState"/>
+            <PuzzleViewer ref="puzzleViewer" @update-puzzle-state="updatePuzzleState" @solved="$emit('solved')"/>
             <div class="puzzle-status" v-if="puzzleState?.statusMessage !== undefined">
                 {{ puzzleState.statusMessage }}
             </div>

@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { genreInfo, genres } from "@/genres";
 import PuzzleContainer from "./PuzzleContainer.vue";
-import { inject, onMounted, reactive, ref, shallowRef, useId, useTemplateRef } from "vue";
+import { computed, inject, onMounted, reactive, ref, shallowRef, useId, useTemplateRef, watch } from "vue";
 import { PuzzlesAPConnection, puzzlesAPConnectionKey } from "@/services/PuzzlesAPConnection";
 import { GameModel } from "@/types/GameModel";
+import { PuzzleData } from "@/types/PuzzleData";
+import { PuzzleState } from "@/types/PuzzleState";
 
 const puzzleContainer = useTemplateRef("puzzleContainer")
 
@@ -16,9 +18,48 @@ const connectionPlayer = ref("Player1")
 const errorText = ref("")
 
 const apConnection = inject(puzzlesAPConnectionKey) as PuzzlesAPConnection
-const gameModel = ref(new GameModel())
+const gameModel = computed(() => apConnection.connected.value ? apConnection.model.value : freeplayPuzzleState.value)
 
-const selectedIndex = ref(0)
+const selectedPuzzle = ref<PuzzleData>()
+
+const sortedPuzzles = computed(() => {
+    if (!gameModel.value.puzzles) return []
+
+    let puzzleList = gameModel.value.puzzles.slice()
+    puzzleList.sort((a,b) => {
+        // Sort unlocked puzzles first
+        if (a.locked < b.locked) return -1
+        if (a.locked > b.locked) return 1
+
+        // Then unsolved puzzles
+        if (a.solved < b.solved) return -1
+        if (a.solved > b.solved) return 1
+
+        // Then sort by number
+        if (a.index !== undefined && b.index !== undefined) {
+            return a.index - b.index
+        }
+
+        return 0
+    })
+
+    return puzzleList
+})
+
+const freeplayPuzzleState = computed(() => {
+    let puzzles = genres.map(g => {
+        let puzzle = new PuzzleData(g)
+
+        return puzzle
+    })
+
+    let gameModel = new GameModel()
+    gameModel.freeplay = true
+    gameModel.filename = "Freeplay"
+    gameModel.puzzles = puzzles
+
+    return gameModel
+})
 
 function connect() {
     if (apConnection) {
@@ -26,8 +67,6 @@ function connect() {
     }
 
     apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)
-
-    gameModel.value = apConnection.model
     
     Object.assign(window, {apConnection: apConnection})
 }
@@ -36,8 +75,32 @@ function apErrorCallback(message: any) {
     console.error("AP Error: ", message)
 }
 
+function onPuzzleSolved() {
+    let puzzle = selectedPuzzle.value
+
+    if (!puzzle) {
+        console.warn("Solve called with no puzzle loaded")
+        return;
+    }
+
+    puzzle.localSolved = true
+    puzzle.solved = true //TODO handle this in PuzzlesAPConnection
+}
+
+watch(selectedPuzzle, (puzzle) => {
+    if (!puzzle) {
+        puzzleContainer.value?.switchPuzzle("none")
+        return;
+    }
+    puzzleContainer.value?.switchPuzzle(puzzle.genre, puzzle.seed, !gameModel.value.freeplay)
+})
+
+watch(gameModel, () => {
+    selectedPuzzle.value = undefined;
+})
+
 onMounted(() => {
-    puzzleContainer.value?.switchPuzzle(genres[0])
+    puzzleContainer.value?.switchPuzzle("none")
 })
 </script>
 
@@ -68,18 +131,18 @@ onMounted(() => {
                             <button type="submit" class="btn btn-primary">Connect</button>
                         </form>
                         <div class="puzzlelist list-group list-group-flush">
-                            <a v-for="(puzzle, index) in gameModel.puzzles"
+                            <a v-for="(puzzle, index) in sortedPuzzles"
                                     class="list-group-item"
-                                    :class="{'active': index == selectedIndex, 'disabled': puzzle.locked}"
+                                    :class="{'active': puzzle == selectedPuzzle, 'disabled': puzzle.locked}"
                                     href="#"
-                                    @click="selectedIndex=index; puzzleContainer?.switchPuzzle(puzzle.genre, puzzle.seed, true)">
-                                {{ puzzle.index }}: {{ genreInfo[puzzle.genre].name }}
+                                    @click="selectedPuzzle=puzzle">
+                                {{ puzzle.index }}{{ puzzle.index ? ": " : "" }}{{ genreInfo[puzzle.genre].name }}
                             </a>
                         </div>
                     </div>
                 </div>
                 <div class="col-8 main">
-                    <PuzzleContainer ref="puzzleContainer"/>
+                    <PuzzleContainer ref="puzzleContainer" @solved="onPuzzleSolved()"/>
                     <div class="filler tall">Puzzle info</div>
                 </div>
             </div>

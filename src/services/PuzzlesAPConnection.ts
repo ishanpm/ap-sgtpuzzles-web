@@ -1,6 +1,6 @@
 import { GameModel } from "@/types/GameModel";
 import { Client, ITEMS_HANDLING_FLAGS, type ConnectedPacket, type ConnectionInformation, type DataPackage, type GamePackage, type JSONSerializableData, type PrintJSONPacket, type ReceivedItemsPacket, type RetrievedPacket, type RoomInfoPacket, type RoomUpdatePacket, type ServerPacket, type SetReplyPacket } from "archipelago.js"
-import { reactive, ref, type InjectionKey, type Ref } from "vue";
+import { reactive, ref, watch, type InjectionKey, type Ref, type WatchHandle } from "vue";
 import { PuzzleState } from "../types/PuzzleState";
 import { PuzzleData, puzzleFromArchipelagoString } from "@/types/PuzzleData";
 import { isAPSlotData, type APSlotData } from "@/types/APSlotData";
@@ -13,13 +13,14 @@ export const puzzlesAPConnectionKey = Symbol() as InjectionKey<PuzzlesAPConnecti
 export class PuzzlesAPConnection {
     client: Client
     connected: Ref<boolean>
-    model: GameModel
+    model: Ref<GameModel>
     gamePackage: GamePackage | undefined
+    watchers: WatchHandle[] = []
 
     constructor() {
         this.client = new Client();
         this.connected = ref(false)
-        this.model = reactive(new GameModel());
+        this.model = ref(new GameModel());
     }
 
     async connectAP(hostname: string, port: number, player: string, password?: string) {
@@ -50,6 +51,12 @@ export class PuzzlesAPConnection {
         console.log("connected to AP");
     }
 
+    clearWatchers() {
+        for (let watcher of this.watchers) {
+            watcher.stop()
+        }
+    }
+
     getGamePackage() {
         if (!this.gamePackage) {
             this.gamePackage = this.client.data.package.get(gameName)
@@ -65,6 +72,10 @@ export class PuzzlesAPConnection {
         console.log(packet.cmd, packet)
     }
 
+    onPuzzleSolved() {
+
+    }
+
     onConnected(packet: ConnectedPacket) {
         // Load puzzle data
         const gamePackage = this.getGamePackage()
@@ -74,26 +85,25 @@ export class PuzzlesAPConnection {
             throw new Error("Invalid slot data from Archipelago")
         }
 
-        if (this.model.puzzles.length == 0) {
-            let newPuzzles: PuzzleData[] = []
+        this.model.value = new GameModel()
 
-            let puzzles = slotData.puzzles
+        let newPuzzles: PuzzleData[] = []
 
-            for (let i = 0; i < puzzles.length; i++) {
-                let puzzleString = puzzles[i]
+        let puzzles = slotData.puzzles
 
-                let puzzleOptions = {
-                    locked: true,
-                    items: []
-                }
-                let newPuzzle = puzzleFromArchipelagoString(puzzleString, ""+slotData.world_seed, i+1, puzzleOptions)
+        for (let i = 0; i < puzzles.length; i++) {
+            let puzzleString = puzzles[i]
 
-                newPuzzles.push(newPuzzle)
+            let puzzleOptions = {
+                locked: true,
+                items: []
             }
+            let newPuzzle = puzzleFromArchipelagoString(puzzleString, ""+slotData.world_seed, i+1, puzzleOptions)
 
-            this.model.puzzles = newPuzzles;
-            console.log(newPuzzles)
+            newPuzzles.push(newPuzzle)
         }
+
+        this.model.value.puzzles = newPuzzles;
     }
 
     onReceiveItems(packet: ReceivedItemsPacket) {
@@ -108,7 +118,7 @@ export class PuzzlesAPConnection {
             if (puzzleItemMatch) {
                 let index = +puzzleItemMatch[1] - 1
                 console.log(index)
-                this.model.puzzles[index].locked = false
+                this.model.value.puzzles[index].locked = false
             }
         }
     }

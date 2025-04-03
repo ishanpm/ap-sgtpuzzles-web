@@ -3,6 +3,7 @@ import { isGenre, type GenreKey } from "@/genres"
 export class PuzzleData {
     genre: GenreKey
     locked: boolean = false
+    localSolved: boolean = false
     solved: boolean = false
     params?: string
     id?: string

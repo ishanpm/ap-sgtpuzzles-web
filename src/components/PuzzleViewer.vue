@@ -56,7 +56,8 @@ defineExpose({
 })
 
 const emit = defineEmits<{
-    updatePuzzleState: [state: PuzzleState]
+    updatePuzzleState: [state: PuzzleState],
+    solved: []
 }>()
 
 async function switchPuzzle(genre: GenreKey, seedOrId?: string, singleMode?: boolean) {
@@ -141,13 +142,13 @@ function redo() {
 
 const messageHandlers: {[command: string]: (...args: any[]) => void | undefined} = {
     ready() {
-        console.log("puzzle viewer: ready")
+        //console.log("puzzle viewer: ready")
     },
     js_init_puzzle() {
-        console.log("puzzle viewer: init_puzzle")
+        //console.log("puzzle viewer: init_puzzle")
     },
     js_post_init() {
-        console.log("puzzle viewer: post_init")
+        //console.log("puzzle viewer: post_init")
     },
     js_update_permalinks(puzzleDesc?: string, puzzleSeed?: string) {
         puzzleState.value.id = puzzleDesc;
@@ -168,8 +169,10 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
     js_remove_solve_button() {
         puzzleState.value.canSolve = false;
     },
-    js_update_status(status) {
-        console.log("puzzle viewer: update status", status)
+    js_update_status(status: number) {
+        if (status == 1) {
+            emit("solved")
+        }
     },
     js_update_key_labels() {},
     js_add_preset(menuId: number, title: string, index: number) {
@@ -188,7 +191,7 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
             presets[menuId] = {title: "Unknown", entries: [newPreset]}
         }
     },
-    js_add_preset_submenu(parentId, title, newId) {
+    js_add_preset_submenu(parentId: number, title: string, newId: number) {
         const presets = puzzleState.value.presets;
 
         let newMenu: GenrePresetSubmenuElement = {
@@ -215,10 +218,10 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
             presets[newId] = newMenu
         }
     },
-    js_select_preset(index) {
+    js_select_preset(index: number) {
         puzzleState.value.currentPreset = index
     },
-    js_dialog_init(titletext) {
+    js_dialog_init(titletext: string) {
         dialogTitle.value = titletext;
         dialogError.value = "";
         dialogControls.value = [];
@@ -246,14 +249,14 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
             puzzleModal.value?.hide();
         }
     },
-    js_canvas_set_statusbar(message) {
+    js_canvas_set_statusbar(message: string) {
         puzzleState.value.statusMessage = message
     },
     js_canvas_remove_statusbar() {
         puzzleState.value.statusMessage = undefined
     },
     js_canvas_set_size() {},
-    js_error_box(text) {
+    js_error_box(text: string) {
         if (dialogVisible.value) {
             dialogError.value = text;
         } else {
@@ -267,11 +270,13 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
 
 function processMessage(event: MessageEvent) {
     if (event.source != puzzleFrame.value?.contentWindow) return;
-    if (!event.data[Symbol.iterator]) return;
+
+    let data = event.data
+    if (!Array.isArray(data)) return;
 
     let command: string;
     let args: any[];
-    [command, ...args] = event.data
+    [command, ...args] = data
 
     let handler: ((...args: any[]) => void) | undefined = messageHandlers[command];
 
