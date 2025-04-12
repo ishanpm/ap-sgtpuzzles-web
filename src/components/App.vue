@@ -22,22 +22,50 @@ const gameModel = computed(() => apConnection.connected.value ? apConnection.mod
 
 const selectedPuzzle = ref<PuzzleData>()
 
+const sortKeys = ref<string[]>(["status","genre","number"])
+
+const filters = ref({
+    showLocked: true,
+    showSolved: true
+})
+
 const sortedPuzzles = computed(() => {
     if (!gameModel.value.puzzles) return []
 
     let puzzleList = gameModel.value.puzzles.slice()
+    puzzleList = puzzleList.filter(e => {
+        if (!filters.value.showLocked && e.locked) return false;
+        if (!filters.value.showSolved && e.solved) return false;
+        return true
+    })
     puzzleList.sort((a,b) => {
-        // Sort unlocked puzzles first
-        if (a.locked < b.locked) return -1
-        if (a.locked > b.locked) return 1
+        // Return a negative number if a comes before b
+        // Return a positive number if a comes after b
+        // Return 0 otherwise
 
-        // Then unsolved puzzles
-        if (a.solved < b.solved) return -1
-        if (a.solved > b.solved) return 1
+        for (var sortKey of sortKeys.value) {
+            switch (sortKey) {
+            case "status":
+                // Sort unlocked puzzles first
+                if (a.locked < b.locked) return -1
+                if (a.locked > b.locked) return 1
 
-        // Then sort by number
-        if (a.index !== undefined && b.index !== undefined) {
-            return a.index - b.index
+                // Then unsolved puzzles
+                if (a.solved < b.solved) return -1
+                if (a.solved > b.solved) return 1
+                break;
+
+            case "number":
+                if (a.index !== undefined && b.index !== undefined) {
+                    return a.index - b.index
+                }
+                break;
+
+            case "genre":
+                if (a.genre < b.genre) return -1
+                if (a.genre > b.genre) return 1
+                break;
+            }
         }
 
         return 0
@@ -47,9 +75,11 @@ const sortedPuzzles = computed(() => {
 })
 
 const freeplayPuzzleState = computed(() => {
+    let index = 1
+
     let puzzles = genres.map(g => {
         let puzzle = new PuzzleData(g)
-
+        puzzle.index = index++
         return puzzle
     })
 
@@ -133,10 +163,10 @@ onMounted(() => {
                         <div class="puzzlelist list-group list-group-flush">
                             <a v-for="(puzzle, index) in sortedPuzzles"
                                     class="list-group-item"
-                                    :class="{'active': puzzle == selectedPuzzle, 'disabled': puzzle.locked}"
+                                    :class="{'active': puzzle.index == selectedPuzzle?.index, 'disabled': puzzle.locked}"
                                     href="#"
                                     @click="selectedPuzzle=puzzle">
-                                {{ puzzle.index }}{{ puzzle.index ? ": " : "" }}{{ genreInfo[puzzle.genre].name }}
+                                {{ gameModel.freeplay ? "" : `${puzzle.index}: ` }}{{ genreInfo[puzzle.genre].name }}
                             </a>
                         </div>
                     </div>
