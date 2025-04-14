@@ -12,9 +12,9 @@ This is a very rough prototype. As such, there are many features missing, the in
 
 ## How to play
 
-### Setup
+To try out the puzzles or join an existing multiworld, just head over to [https://ishanpm.github.io/ap-sgtpuzzles](https://ishanpm.github.io/ap-sgtpuzzles)!
 
-First, download the most recent build of the AP world from the [Releases page](https://github.com/ishanpm/ap-sgtpuzzles-web/releases) and install it 
+If you want to include this game in a multiworld, you can find the YAML template and the apworld in this repository's [releases page](https://github.com/ishanpm/ap-sgtpuzzles-web/releases). See the [Archipelago setup guide](https://archipelago.gg/tutorial/Archipelago/setup/en) for information on how to set up Archipelago and use the apworld.
 
 ## Build
 
