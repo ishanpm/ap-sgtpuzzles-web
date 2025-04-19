@@ -8,7 +8,7 @@ For this:
 
 https://archipelago.gg/
 
-This is a very rough prototype. As such, there are many features missing, the interface is a bit of a mess, it's relatively untested, and absolutely everything is subject to change. If you'd like to report a bug or suggest a feature, feel free to [create an issue here](https://github.com/ishanpm/ap-sgtpuzzles-web/issues).
+This is a very rough prototype. As such, there are many features missing, the interface is a bit of a mess, it's relatively untested, and absolutely everything is subject to change. If you'd like to report a bug or suggest a feature, feel free to [create an issue here](https://github.com/ishanpm/ap-sgtpuzzles-web/issues). If you have other questions or just want to share a neat puzzle you found, come join the [Simon Tatham's Portable Puzzle Collection thread](https://discord.com/channels/731205301247803413/1278733078516207719) in the Archipelago Discord.
 
 ## How to play
 
@@ -33,12 +33,12 @@ npm install
 npm run dev
 ```
 
-To build for production, run `npm run build` and copy the files from `/dev`.
+To build for production, run `npm run build` and copy the files from `/dist`.
 
 If you're not running Linux, you can do what the build script does manually:
 
 - Build the `ap-sgtpuzzles/` directory using Emscripten (good luck lol)
-- Create the folder `public/res/wasm` folder and copy the built `.js` and `.wasm` files there
+- Create the folder `public/res/wasm` folder and copy the built `.js` and `.wasm` files to there
 - Copy the built `help/` folder to `public/help/`
 
 ## License
