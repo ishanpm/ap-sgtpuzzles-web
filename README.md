@@ -8,7 +8,11 @@ For this:
 
 https://archipelago.gg/
 
-This is a very rough prototype. As such, there are many features missing, the interface is a bit of a mess, it's relatively untested, and absolutely everything is subject to change. If you'd like to report a bug or suggest a feature, feel free to [create an issue here](https://github.com/ishanpm/ap-sgtpuzzles-web/issues). If you have other questions or just want to share a neat puzzle you found, come join the [Simon Tatham's Portable Puzzle Collection thread](https://discord.com/channels/731205301247803413/1278733078516207719) in the Archipelago Discord.
+This is a very rough prototype. As such, there are many features missing, the interface is a bit of a mess, it's relatively untested, and absolutely everything is subject to change.
+
+If you'd like to report a bug or suggest a feature, feel free to [create an issue here](https://github.com/ishanpm/ap-sgtpuzzles-web/issues).
+
+If you have other questions or just want to share a neat puzzle you found, come join the [Simon Tatham's Portable Puzzle Collection thread](https://discord.com/channels/731205301247803413/1278733078516207719) in the Archipelago Discord.
 
 ## How to play
 
