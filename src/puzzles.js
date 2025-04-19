@@ -754,6 +754,15 @@ async function createFile(hostname, port, player, password) {
 
     let slotData = client.data.slotData;
 
+    let fileVersion = slotData.file_version ?? 0
+
+    console.log(`file_version = ${slotData.file_version}`)
+    console.log(`world_version = ${slotData.world_version}`)
+
+    if (fileVersion > 1) {
+        alert(`World is version ${slotData.world_version}, which is not compatible with this web client version. Some features may not work as expected.`)
+    }
+
     let newFile = new GameSave({
         host: hostname,
         port: port,
