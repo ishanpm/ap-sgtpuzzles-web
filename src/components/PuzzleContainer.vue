@@ -15,7 +15,7 @@ const debugId = ref("")
 const puzzleState = ref<PuzzleState>()
 const paramsCopied = ref(false)
 
-let paramsCopiedFadeTimeout: NodeJS.Timeout;
+let paramsCopiedFadeTimeout: ReturnType<typeof setTimeout>;
 
 defineExpose({
     puzzleState,

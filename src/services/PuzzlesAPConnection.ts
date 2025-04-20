@@ -1,6 +1,6 @@
 import { GameModel } from "@/types/GameModel";
-import { type ConnectionOptions, Client, type ConnectedPacket, type DataPackage, type GamePackage, type PrintJSONPacket, type ReceivedItemsPacket, type RetrievedPacket, type RoomInfoPacket, type RoomUpdatePacket, type ServerPacket, type SetReplyPacket, PackageMetadata, type MessageNode, InvalidPacketPacket } from "archipelago.js"
-import { reactive, ref, watch, type InjectionKey, type Ref, type WatchHandle } from "vue";
+import { type ConnectionOptions, Client, type ConnectedPacket, type ReceivedItemsPacket, type RetrievedPacket, type RoomUpdatePacket, type ServerPacket, type SetReplyPacket, PackageMetadata, type MessageNode, type InvalidPacketPacket } from "archipelago.js"
+import { reactive, ref, toHandlers, watch, type InjectionKey, type Ref, type WatchHandle } from "vue";
 import { PuzzleState } from "../types/PuzzleState";
 import { PuzzleData, puzzleFromArchipelagoString } from "@/types/PuzzleData";
 import { isAPSlotData, type APSlotData } from "@/types/APSlotData";
@@ -26,7 +26,7 @@ export class PuzzlesAPConnection {
         this.client.socket.on("sentPackets", (packets =>console.log(packets)))
         this.client.socket.on("disconnected", () => console.log("Disconnect"))
         this.client.socket.on("receivedPacket", this.logEvent.bind(this));
-        this.client.socket.on("receivedItems", this.onReceiveItems.bind(this));
+        this.client.socket.on("receivedItems", this.onReceivedItems.bind(this));
         this.client.socket.on("roomUpdate", this.syncAPStatus.bind(this));
         this.client.socket.on("setReply", this.onSetReply.bind(this))
         this.client.socket.on("retrieved", this.onKeysRetreived.bind(this))
@@ -35,7 +35,10 @@ export class PuzzlesAPConnection {
     }
 
     async connectAP(hostname: string, port: number, player: string, password?: string) {
+        this.client.socket.disconnect()
         this.connected.value = false
+
+        this.clearWatchers()
 
         console.log("connecting to AP...");
 
@@ -45,16 +48,21 @@ export class PuzzlesAPConnection {
 
         let connectionURL = `${hostname}:${port}`
 
-        let pendingConnection = this.client.login(connectionURL, player, gameName, connectionInfo);
+        await this.client.login(connectionURL, player, gameName, connectionInfo);
 
-        await pendingConnection;
-
-        this.connected.value = true;
         console.log("connected to AP");
 
-        this.client.storage.notify([`sgtpuzzles_solves_${this.client.players.self.slot}`], (key, value, oldValue) => {
-            //todo
+        let solvesKey = `sgtpuzzles_solves_${this.client.players.self.slot}`
+
+        this.client.storage.notify([solvesKey], (key, value, oldValue) => {
+            this.onRemoteSolvedChange(value)
         })
+
+        let currentSolves = await this.client.storage.fetch([solvesKey])
+
+        this.onRemoteSolvedChange(currentSolves[solvesKey])
+
+        this.connected.value = true;
     }
 
     clearWatchers() {
@@ -76,10 +84,6 @@ export class PuzzlesAPConnection {
 
     logEvent(packet: ServerPacket) {
         console.log(packet.cmd, packet)
-    }
-
-    onPuzzleSolved() {
-
     }
 
     onConnected(packet: ConnectedPacket) {
@@ -112,9 +116,55 @@ export class PuzzlesAPConnection {
         }
 
         this.model.value.puzzles = newPuzzles;
+
+        for (let i = 0; i < puzzles.length; i++) {
+            let watcher = watch(() => this.model.value.puzzles[i].localSolved, (localSolved) => {
+                if (localSolved) {
+                    this.onPuzzleSolved(this.model.value.puzzles[i])
+                }
+            })
+
+            this.watchers.push(watcher)
+        }
     }
 
-    onReceiveItems(packet: ReceivedItemsPacket) {
+    onDisconnected() {
+        this.connected.value = false
+    }
+
+    onPuzzleSolved(puzzle: PuzzleData) {
+        console.log("yay")
+
+        const gamePackage = this.getGamePackage()
+
+        let toCheck: number[] = []
+
+        toCheck.push(gamePackage.locationTable[`Puzzle ${puzzle.index} Reward`])
+
+        for (let i = 1; i < 3; i++) {
+            toCheck.push(gamePackage.locationTable[`Puzzle ${puzzle.index} Reward ${i}`])
+        }
+
+        this.client.check(...toCheck)
+
+        this.client.storage.prepare(`sgtpuzzles_solves_${this.client.players.self.slot}`, {})
+            .update({[puzzle.index]: 1})
+            .commit()
+    }
+
+    onRemoteSolvedChange(remoteSolves: any) {
+        console.log(remoteSolves)
+        for (let key in remoteSolves) {
+            let index = +key
+            let puzzle = this.model.value.puzzles[index-1]
+
+            if (puzzle) {
+                puzzle.solved = true
+            }
+        }
+    }
+
+    onReceivedItems(packet: ReceivedItemsPacket) {
         const gamePackage = this.getGamePackage()
 
         for (let item of packet.items) {
@@ -125,14 +175,13 @@ export class PuzzlesAPConnection {
 
             if (puzzleItemMatch) {
                 let index = +puzzleItemMatch[1] - 1
-                console.log(index)
                 this.model.value.puzzles[index].locked = false
             }
         }
     }
 
     syncAPStatus(packet: RoomUpdatePacket) {
-        
+
     }
 
     onMessage(message: string, nodes: MessageNode[]) {

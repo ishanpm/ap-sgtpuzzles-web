@@ -92,21 +92,19 @@ const freeplayPuzzleState = computed(() => {
 })
 
 async function connect() {
-    if (apConnection) {
-        // TOOO disconnect existing
-    }
 
     try {
         await apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)
     } catch (e) {
         console.error(e)
+        apErrorCallback(e)
     }
     
     Object.assign(window, {apConnection: apConnection})
 }
 
 function apErrorCallback(message: any) {
-    console.error("AP Error: ", message)
+    errorText.value = message.toString()
 }
 
 function onPuzzleSolved() {
@@ -118,7 +116,6 @@ function onPuzzleSolved() {
     }
 
     puzzle.localSolved = true
-    puzzle.solved = true //TODO handle this in PuzzlesAPConnection
 }
 
 watch(selectedPuzzle, (puzzle) => {
@@ -170,7 +167,12 @@ onMounted(() => {
                                     :class="{'active': puzzle.index == selectedPuzzle?.index, 'disabled': puzzle.locked}"
                                     href="#"
                                     @click="selectedPuzzle=puzzle">
-                                {{ gameModel.freeplay ? "" : `${puzzle.index}: ` }}{{ genreInfo[puzzle.genre].name }}
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">{{ genreInfo[puzzle.genre].name }}</h5>
+                                    <small v-if="!gameModel.freeplay" class="">#{{ puzzle.index }}</small>
+                                </div>
+
+                                <p v-if="!gameModel.freeplay" class="mb-1">{{ puzzle.params }}</p>
                             </a>
                         </div>
                     </div>

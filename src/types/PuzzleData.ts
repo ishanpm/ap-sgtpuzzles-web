@@ -7,7 +7,9 @@ export class PuzzleData {
     solved: boolean = false
     params?: string
     id?: string
+    /** Index of the puzzle in the world */
     index?: number
+    /** Seed used to generate the puzzle */
     seed?: string
     items?: PuzzlesLocation[]
 
@@ -20,7 +22,7 @@ export class PuzzlesLocation {
     name: string
     type: string = "unknown"
     itemName?: string
-    hinted: boolean = false
+    hint: string = "none"
     collected: boolean = false
     
     constructor(name: string) {
