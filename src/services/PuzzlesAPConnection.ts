@@ -1,5 +1,5 @@
 import { GameModel } from "@/types/GameModel";
-import { Client, ITEMS_HANDLING_FLAGS, type ConnectedPacket, type ConnectionInformation, type DataPackage, type GamePackage, type JSONSerializableData, type PrintJSONPacket, type ReceivedItemsPacket, type RetrievedPacket, type RoomInfoPacket, type RoomUpdatePacket, type ServerPacket, type SetReplyPacket } from "archipelago.js"
+import { type ConnectionOptions, Client, type ConnectedPacket, type DataPackage, type GamePackage, type PrintJSONPacket, type ReceivedItemsPacket, type RetrievedPacket, type RoomInfoPacket, type RoomUpdatePacket, type ServerPacket, type SetReplyPacket, PackageMetadata, type MessageNode, InvalidPacketPacket } from "archipelago.js"
 import { reactive, ref, watch, type InjectionKey, type Ref, type WatchHandle } from "vue";
 import { PuzzleState } from "../types/PuzzleState";
 import { PuzzleData, puzzleFromArchipelagoString } from "@/types/PuzzleData";
@@ -14,41 +14,47 @@ export class PuzzlesAPConnection {
     client: Client
     connected: Ref<boolean>
     model: Ref<GameModel>
-    gamePackage: GamePackage | undefined
+    gamePackage: PackageMetadata | undefined
     watchers: WatchHandle[] = []
 
     constructor() {
         this.client = new Client();
         this.connected = ref(false)
         this.model = ref(new GameModel());
+
+        this.client.socket.on("connected", this.onConnected.bind(this))
+        this.client.socket.on("sentPackets", (packets =>console.log(packets)))
+        this.client.socket.on("disconnected", () => console.log("Disconnect"))
+        this.client.socket.on("receivedPacket", this.logEvent.bind(this));
+        this.client.socket.on("receivedItems", this.onReceiveItems.bind(this));
+        this.client.socket.on("roomUpdate", this.syncAPStatus.bind(this));
+        this.client.socket.on("setReply", this.onSetReply.bind(this))
+        this.client.socket.on("retrieved", this.onKeysRetreived.bind(this))
+        this.client.socket.on("invalidPacket", this.onInvalidPacket.bind(this))
+        this.client.messages.on("message", this.onMessage.bind(this))
     }
 
     async connectAP(hostname: string, port: number, player: string, password?: string) {
         this.connected.value = false
 
-        this.client.addListener("PacketReceived", this.logEvent.bind(this));
-        this.client.addListener("Connected", this.onConnected.bind(this))
-        this.client.addListener("ReceivedItems", this.onReceiveItems.bind(this));
-        this.client.addListener("RoomUpdate", this.syncAPStatus.bind(this));
-        this.client.addListener("PrintJSON", this.onPrintJson.bind(this))
-        this.client.addListener("SetReply", this.onSetReply.bind(this))
-        this.client.addListener("Retrieved", this.onKeysRetreived.bind(this))
-
         console.log("connecting to AP...");
 
-        const connectionInfo: ConnectionInformation = {
-            hostname: hostname,
-            port: port,
-            game: "Simon Tatham's Portable Puzzle Collection",
-            name: player,
-            password: password,
-            items_handling: ITEMS_HANDLING_FLAGS.REMOTE_ALL,
+        let connectionInfo: ConnectionOptions = {
+            password: password ?? ""
         };
 
-        await this.client.connect(connectionInfo);
+        let connectionURL = `${hostname}:${port}`
+
+        let pendingConnection = this.client.login(connectionURL, player, gameName, connectionInfo);
+
+        await pendingConnection;
 
         this.connected.value = true;
         console.log("connected to AP");
+
+        this.client.storage.notify([`sgtpuzzles_solves_${this.client.players.self.slot}`], (key, value, oldValue) => {
+            //todo
+        })
     }
 
     clearWatchers() {
@@ -59,7 +65,7 @@ export class PuzzlesAPConnection {
 
     getGamePackage() {
         if (!this.gamePackage) {
-            this.gamePackage = this.client.data.package.get(gameName)
+            this.gamePackage = this.client.package.findPackage(gameName) ?? undefined
 
             if (!this.gamePackage) {
                 throw new Error("Failed to retrieve game package")
@@ -82,7 +88,9 @@ export class PuzzlesAPConnection {
         const slotData = packet.slot_data
         
         if (!isAPSlotData(slotData)) {
+            console.log("Slot data failed to type match:", slotData)
             throw new Error("Invalid slot data from Archipelago")
+            
         }
 
         this.model.value = new GameModel()
@@ -110,7 +118,7 @@ export class PuzzlesAPConnection {
         const gamePackage = this.getGamePackage()
 
         for (let item of packet.items) {
-            let itemName = gamePackage.item_id_to_name[item.item]
+            let itemName = gamePackage.reverseItemTable[item.item]
 
             const puzzleItemRegex = /Puzzle (\d+)/
             let puzzleItemMatch = puzzleItemRegex.exec(itemName)
@@ -124,11 +132,11 @@ export class PuzzlesAPConnection {
     }
 
     syncAPStatus(packet: RoomUpdatePacket) {
-
+        
     }
 
-    onPrintJson(packet: PrintJSONPacket, message: string) {
-
+    onMessage(message: string, nodes: MessageNode[]) {
+        console.log(message, nodes)
     }
 
     onSetReply(packet: SetReplyPacket) {
@@ -137,5 +145,9 @@ export class PuzzlesAPConnection {
 
     onKeysRetreived(packet: RetrievedPacket) {
 
+    }
+
+    onInvalidPacket(packet: InvalidPacketPacket) {
+        console.error("Invalid packet sent to Archipelago", packet)
     }
 }

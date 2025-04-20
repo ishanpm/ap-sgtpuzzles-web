@@ -22,7 +22,7 @@ const gameModel = computed(() => apConnection.connected.value ? apConnection.mod
 
 const selectedPuzzle = ref<PuzzleData>()
 
-const sortKeys = ref<string[]>(["status","genre","number"])
+const sortKeys = ref<string[]>(["status","number"])
 
 const filters = ref({
     showLocked: true,
@@ -91,12 +91,16 @@ const freeplayPuzzleState = computed(() => {
     return gameModel
 })
 
-function connect() {
+async function connect() {
     if (apConnection) {
         // TOOO disconnect existing
     }
 
-    apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)
+    try {
+        await apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)
+    } catch (e) {
+        console.error(e)
+    }
     
     Object.assign(window, {apConnection: apConnection})
 }

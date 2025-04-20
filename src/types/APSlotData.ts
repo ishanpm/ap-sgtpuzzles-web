@@ -1,12 +1,10 @@
-import type { JSONSerializableData, SlotData } from "archipelago.js"
-
 export interface APSlotData {
     "world_seed": number
     "seed_name": string
     "player_name": string,
     "player_id": number,
-    "client_version": number,
-    "world_version": string,
+    "file_version"?: number,
+    "world_version"?: string,
     "race": boolean,
     "puzzles": string[],
     "solve_target": number
@@ -18,7 +16,7 @@ export function isAPSlotData(obj?: any): obj is APSlotData {
     if (typeof obj.seed_name != "string") return false;
     if (typeof obj.player_name != "string") return false;
     if (typeof obj.player_id != "number") return false;
-    if (typeof obj.client_version != "number") return false;
+    if (typeof obj.file_version != "number" && typeof obj.file_version != "undefined") return false;
     if (typeof obj.race != "boolean") return false;
     if (!Array.isArray(obj.puzzles)) return false;
     for (let puzzle of obj.puzzles) {
