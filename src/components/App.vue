@@ -6,6 +6,7 @@ import { PuzzlesAPConnection, puzzlesAPConnectionKey } from "@/services/PuzzlesA
 import { GameModel } from "@/types/GameModel";
 import { PuzzleData } from "@/types/PuzzleData";
 import { PuzzleState } from "@/types/PuzzleState";
+import PuzzleListEntry from "./PuzzleListEntry.vue";
 
 const puzzleContainer = useTemplateRef("puzzleContainer")
 
@@ -18,11 +19,11 @@ const connectionPlayer = ref("Player1")
 const errorText = ref("")
 
 const apConnection = inject(puzzlesAPConnectionKey) as PuzzlesAPConnection
-const gameModel = computed(() => apConnection.connected.value ? apConnection.model.value : freeplayPuzzleState.value)
+const gameModel = ref(getFreeplayPuzzleState())
 
 const selectedPuzzle = ref<PuzzleData>()
 
-const sortKeys = ref<string[]>(["status","number"])
+const sortKeys = ref<string[]>([/*"status",*/"number"])
 
 const filters = ref({
     showLocked: true,
@@ -74,7 +75,7 @@ const sortedPuzzles = computed(() => {
     return puzzleList
 })
 
-const freeplayPuzzleState = computed(() => {
+function getFreeplayPuzzleState() {
     let index = 1
 
     let puzzles = genres.map(g => {
@@ -89,12 +90,12 @@ const freeplayPuzzleState = computed(() => {
     gameModel.puzzles = puzzles
 
     return gameModel
-})
+}
 
 async function connect() {
 
     try {
-        await apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)
+        gameModel.value = (await apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)).value
     } catch (e) {
         console.error(e)
         apErrorCallback(e)
@@ -162,18 +163,7 @@ onMounted(() => {
                             <button type="submit" class="btn btn-primary">Connect</button>
                         </form>
                         <div class="puzzlelist list-group list-group-flush">
-                            <a v-for="(puzzle, index) in sortedPuzzles"
-                                    class="list-group-item"
-                                    :class="{'active': puzzle.index == selectedPuzzle?.index, 'disabled': puzzle.locked}"
-                                    href="#"
-                                    @click="selectedPuzzle=puzzle">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h5 class="mb-1">{{ genreInfo[puzzle.genre].name }}</h5>
-                                    <small v-if="!gameModel.freeplay" class="">#{{ puzzle.index }}</small>
-                                </div>
-
-                                <p v-if="!gameModel.freeplay" class="mb-1">{{ puzzle.params }}</p>
-                            </a>
+                            <PuzzleListEntry v-for="puzzle in sortedPuzzles" :puzzle="puzzle" :selected-puzzle="selectedPuzzle" :game-model="gameModel" @click="selectedPuzzle = puzzle"/>
                         </div>
                     </div>
                 </div>

@@ -54,15 +54,15 @@ export class PuzzlesAPConnection {
 
         let solvesKey = `sgtpuzzles_solves_${this.client.players.self.slot}`
 
-        this.client.storage.notify([solvesKey], (key, value, oldValue) => {
+        let stores = await this.client.storage.notify([solvesKey], (key, value, oldValue) => {
             this.onRemoteSolvedChange(value)
         })
 
-        let currentSolves = await this.client.storage.fetch([solvesKey])
-
-        this.onRemoteSolvedChange(currentSolves[solvesKey])
+        this.onRemoteSolvedChange(stores[solvesKey])
 
         this.connected.value = true;
+
+        return this.model
     }
 
     clearWatchers() {
@@ -135,6 +135,10 @@ export class PuzzlesAPConnection {
     onPuzzleSolved(puzzle: PuzzleData) {
         console.log("yay")
 
+        if (!this.client.socket.connected) {
+            return;
+        }
+
         const gamePackage = this.getGamePackage()
 
         let toCheck: number[] = []
@@ -148,12 +152,11 @@ export class PuzzlesAPConnection {
         this.client.check(...toCheck)
 
         this.client.storage.prepare(`sgtpuzzles_solves_${this.client.players.self.slot}`, {})
-            .update({[puzzle.index]: 1})
+            .update({[puzzle.index]: true})
             .commit()
     }
 
     onRemoteSolvedChange(remoteSolves: any) {
-        console.log(remoteSolves)
         for (let key in remoteSolves) {
             let index = +key
             let puzzle = this.model.value.puzzles[index-1]

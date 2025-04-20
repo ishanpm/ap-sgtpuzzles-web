@@ -3,9 +3,15 @@ import { isGenre, type GenreKey } from "@/genres"
 export class PuzzleData {
     genre: GenreKey
     locked: boolean = false
+    /** Whether the puzzle has been solved by this client */
     localSolved: boolean = false
+    /** Whether the puzzle has been solved by any client */
     solved: boolean = false
+    /** Whether this puzzle was skipped to check its locations */
+    skipped: boolean = false
+    /** Parameter string of the puzzle */
     params?: string
+    /** ID string used to generate the puzzle */
     id?: string
     /** Index of the puzzle in the world */
     index?: number
