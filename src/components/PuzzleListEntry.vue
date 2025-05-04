@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { genreInfo } from '@/genres';
 import { GameModel } from '@/types/GameModel';
-import { PuzzleData, puzzleFromArchipelagoString } from '@/types/PuzzleData';
-import { computed, ref } from 'vue';
+import { PuzzleData } from '@/types/PuzzleData';
+import { computed } from 'vue';
 
 defineEmits<{
     click: [payload: MouseEvent]
@@ -68,12 +68,12 @@ const status = computed(() => {
 }
 
 .puzzle-list-item:not(.active) {
-    &.locked {
-        //background: linear-gradient(135deg, transparent 0.8em, 0%, var(--bs-secondary-color) 1em, 0%, transparent);
-    }
-    &.unsolved {
-        //background: linear-gradient(135deg, var(--bs-emphasis-color) 1em, 0%, transparent);
-    }
+    // &.locked {
+    //     background: linear-gradient(135deg, transparent 0.8em, 0%, var(--bs-secondary-color) 1em, 0%, transparent);
+    // }
+    // &.unsolved {
+    //     background: linear-gradient(135deg, var(--bs-emphasis-color) 1em, 0%, transparent);
+    // }
     &.solved, &.remote-solved {
         background: linear-gradient(135deg, var(--bs-success) 1em, 0%, transparent);
     }

@@ -8,6 +8,8 @@ import { Tooltip } from 'bootstrap';
 
 const puzzleViewer = useTemplateRef("puzzleViewer")
 const paramsLink = useTemplateRef("paramsLink")
+const puzzleDownloadLink = useTemplateRef("puzzleDownloadLink")
+const puzzleUploadControl = useTemplateRef("puzzleUploadControl")
 
 const paramsLinkTooltip = shallowRef<Tooltip>()
 const debugGenre = ref<GenreKey>("none")
@@ -46,6 +48,44 @@ function copyParams() {
 
     clearTimeout(paramsCopiedFadeTimeout)
     paramsCopiedFadeTimeout = setTimeout(() => paramsCopied.value = false, 10000)
+}
+
+async function downloadPuzzle() {
+    if (!puzzleDownloadLink.value || !puzzleViewer.value) {
+        console.warn("Tried to download puzzle before DOM ready")
+        return
+    }
+
+    let data = await puzzleViewer.value.getSaveData()
+
+    puzzleDownloadLink.value.href = `data:application/octet-stream,${data}`
+    puzzleDownloadLink.value.download = `${puzzleState.value?.genre??"puzzle"}.sav`
+
+    puzzleDownloadLink.value.click()
+}
+
+function uploadPuzzle() {
+    if (!puzzleUploadControl.value) {
+        console.warn("Tried to upload puzzle before DOM ready")
+        return
+    }
+
+    puzzleUploadControl.value.onchange = async () => {
+        if (!puzzleUploadControl.value || !puzzleViewer.value) {
+            console.warn("Tried to upload puzzle before DOM ready")
+            return
+        }
+        let files = puzzleUploadControl.value.files
+        if (!files) return;
+
+        let savefile = files.item(0)
+        if (!savefile) return;
+
+        let data = await savefile.text()
+        puzzleViewer.value.setSaveData(data)
+    }
+
+    puzzleUploadControl.value.click()
 }
 
 watch(() => puzzleState.value?.params, () => {
@@ -95,8 +135,8 @@ onMounted(() => {
                     <li><button class="dropdown-item" @click="puzzleViewer?.puzzleFromId()">Enter game ID...</button></li>
                     <li><button class="dropdown-item" @click="puzzleViewer?.puzzleFromSeed()">Enter random seed...</button></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><button class="dropdown-item" disabled="true">Load from file...</button></li>
-                    <li><button class="dropdown-item" disabled="true">Save to file...</button></li>
+                    <li><button class="dropdown-item" @click="uploadPuzzle">Load from file...</button></li>
+                    <li><button class="dropdown-item" @click="downloadPuzzle">Save to file...</button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item" href="#" @click="puzzleViewer?.showPreferences()">Preferences for {{ genreInfo[puzzleState.genre].name }}...</button></li>
                 </ul>
@@ -116,6 +156,8 @@ onMounted(() => {
                 {{ puzzleState.statusMessage }}
             </div>
         </div>
+        <a style="display: none;" ref="puzzleDownloadLink"></a>
+        <input type="file" style="display: none;" ref="puzzleUploadControl" accept=".sav">
     </div>
 </template>
 

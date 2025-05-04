@@ -16,6 +16,8 @@ cp -f ap-sgtpuzzles/build-emscripten/*.js public/res/wasm
 cp -f ap-sgtpuzzles/build-emscripten/*.wasm public/res/wasm
 cp -f ap-sgtpuzzles/build-emscripten/unfinished/*.js public/res/wasm
 cp -f ap-sgtpuzzles/build-emscripten/unfinished/*.wasm public/res/wasm
+cp -f ap-sgtpuzzles/build-emscripten/xsheep-puzzles/*.js public/res/wasm
+cp -f ap-sgtpuzzles/build-emscripten/xsheep-puzzles/*.wasm public/res/wasm
 
 mkdir -p public/help
 cp -rf ap-sgtpuzzles/build-emscripten/help/. public/help/

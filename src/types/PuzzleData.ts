@@ -9,7 +9,7 @@ export class PuzzleData {
     solved: boolean = false
     /** Whether this puzzle was skipped to check its locations */
     skipped: boolean = false
-    /** Parameter string of the puzzle */
+    /** Parameter string of the puzzle. This is everything before the hash of the seed, or the colon of the id. */
     params?: string
     /** ID string used to generate the puzzle */
     id?: string
@@ -28,7 +28,7 @@ export class PuzzlesLocation {
     name: string
     type: string = "unknown"
     itemName?: string
-    hint: string = "none"
+    hint: any = "none"
     collected: boolean = false
     
     constructor(name: string) {

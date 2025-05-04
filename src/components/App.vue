@@ -1,139 +1,18 @@
 <script setup lang="ts">
-import { genreInfo, genres } from "@/genres";
-import PuzzleContainer from "./PuzzleContainer.vue";
-import { computed, inject, onMounted, reactive, ref, shallowRef, useId, useTemplateRef, watch } from "vue";
-import { PuzzlesAPConnection, puzzlesAPConnectionKey } from "@/services/PuzzlesAPConnection";
-import { GameModel } from "@/types/GameModel";
-import { PuzzleData } from "@/types/PuzzleData";
-import { PuzzleState } from "@/types/PuzzleState";
-import PuzzleListEntry from "./PuzzleListEntry.vue";
+import { GameModel } from '@/types/GameModel';
+import Game from './Game.vue';
+import { inject, onMounted, ref } from 'vue';
+import { SaveService, saveServiceKey } from '@/services/SaveService';
 
-const puzzleContainer = useTemplateRef("puzzleContainer")
+const saveService = inject(saveServiceKey) as SaveService
+const fileList = ref<GameModel[]>([])
 
-const id = useId();
-
-const connectionHost = ref("localhost")
-const connectionPort = ref("38281")
-const connectionPlayer = ref("Player1")
-
-const errorText = ref("")
-
-const apConnection = inject(puzzlesAPConnectionKey) as PuzzlesAPConnection
-const gameModel = ref(getFreeplayPuzzleState())
-
-const selectedPuzzle = ref<PuzzleData>()
-
-const sortKeys = ref<string[]>([/*"status",*/"number"])
-
-const filters = ref({
-    showLocked: true,
-    showSolved: true
-})
-
-const sortedPuzzles = computed(() => {
-    if (!gameModel.value.puzzles) return []
-
-    let puzzleList = gameModel.value.puzzles.slice()
-    puzzleList = puzzleList.filter(e => {
-        if (!filters.value.showLocked && e.locked) return false;
-        if (!filters.value.showSolved && e.solved) return false;
-        return true
-    })
-    puzzleList.sort((a,b) => {
-        // Return a negative number if a comes before b
-        // Return a positive number if a comes after b
-        // Return 0 otherwise
-
-        for (var sortKey of sortKeys.value) {
-            switch (sortKey) {
-            case "status":
-                // Sort unlocked puzzles first
-                if (a.locked < b.locked) return -1
-                if (a.locked > b.locked) return 1
-
-                // Then unsolved puzzles
-                if (a.solved < b.solved) return -1
-                if (a.solved > b.solved) return 1
-                break;
-
-            case "number":
-                if (a.index !== undefined && b.index !== undefined) {
-                    return a.index - b.index
-                }
-                break;
-
-            case "genre":
-                if (a.genre < b.genre) return -1
-                if (a.genre > b.genre) return 1
-                break;
-            }
-        }
-
-        return 0
-    })
-
-    return puzzleList
-})
-
-function getFreeplayPuzzleState() {
-    let index = 1
-
-    let puzzles = genres.map(g => {
-        let puzzle = new PuzzleData(g)
-        puzzle.index = index++
-        return puzzle
-    })
-
-    let gameModel = new GameModel()
-    gameModel.freeplay = true
-    gameModel.filename = "Freeplay"
-    gameModel.puzzles = puzzles
-
-    return gameModel
+async function loadFileList() {
+    fileList.value = await saveService.getFileList()
 }
 
-async function connect() {
+onMounted(() => loadFileList())
 
-    try {
-        gameModel.value = (await apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)).value
-    } catch (e) {
-        console.error(e)
-        apErrorCallback(e)
-    }
-    
-    Object.assign(window, {apConnection: apConnection})
-}
-
-function apErrorCallback(message: any) {
-    errorText.value = message.toString()
-}
-
-function onPuzzleSolved() {
-    let puzzle = selectedPuzzle.value
-
-    if (!puzzle) {
-        console.warn("Solve called with no puzzle loaded")
-        return;
-    }
-
-    puzzle.localSolved = true
-}
-
-watch(selectedPuzzle, (puzzle) => {
-    if (!puzzle) {
-        puzzleContainer.value?.switchPuzzle("none")
-        return;
-    }
-    puzzleContainer.value?.switchPuzzle(puzzle.genre, puzzle.seed, !gameModel.value.freeplay)
-})
-
-watch(gameModel, () => {
-    selectedPuzzle.value = undefined;
-})
-
-onMounted(() => {
-    puzzleContainer.value?.switchPuzzle("none")
-})
 </script>
 
 <template>
@@ -143,86 +22,9 @@ onMounted(() => {
                 <a class="navbar-brand" href="#">AP Puzzles</a>
             </div>
         </nav>
-        <div class="container content">
-            <div class="row">
-                <div class="col-4">
-                    <div class="sidebar">
-                        <form class="connection-info" @submit.prevent="connect">
-                            <div class="mb-3">
-                                <label :for="`connection-host-${id}`" class="form-label">Host</label>
-                                <input v-model="connectionHost" class="form-control" :id="`connection-host-${id}`">
-                            </div>
-                            <div class="mb-3">
-                                <label :for="`connection-port-${id}`" class="form-label">Port</label>
-                                <input inputmode="numeric" v-model="connectionPort" class="form-control" :id="`connection-port-${id}`">
-                            </div>
-                            <div class="mb-3">
-                                <label :for="`connection-player-${id}`" class="form-label">Player</label>
-                                <input v-model="connectionPlayer" class="form-control" :id="`connection-player-${id}`">
-                            </div>
-                            <button type="submit" class="btn btn-primary">Connect</button>
-                        </form>
-                        <div class="puzzlelist list-group list-group-flush">
-                            <PuzzleListEntry v-for="puzzle in sortedPuzzles" :puzzle="puzzle" :selected-puzzle="selectedPuzzle" :game-model="gameModel" @click="selectedPuzzle = puzzle"/>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-8 main">
-                    <PuzzleContainer ref="puzzleContainer" @solved="onPuzzleSolved()"/>
-                    <div class="filler tall">Puzzle info</div>
-                </div>
-            </div>
-        </div>
     </div>
-    <Teleport to="#toast-container">
-        <div ref="errorToastElem" data-bs-autohide="false" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="toast-header">
-                <strong class="me-auto">Connection Error</strong>
-                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-            <div class="toast-body">
-                {{ errorText }}
-            </div>
-        </div>
-    </Teleport>
+    <Game/>
 </template>
 
 <style lang="scss">
-.filler {
-    border: 2px dashed #ddd;
-    background-color: #eee;
-    border-radius: 4px;
-    color: #aaa;
-    font-size: larger;
-    padding: 1em;
-}
-
-[data-bs-theme=dark] .filler {
-    border-color: #6e6e6e;
-    background-color: #353535;
-    color: #868686;
-}
-
-.sidebar {
-    position: sticky;
-    height: calc(100vh - 2rem - 56px);
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    top: calc(1rem + 56px);
-    margin-top: 1rem;
-}
-
-.puzzlelist {
-    flex: 1;
-    z-index: 1;
-    overflow-y: scroll;
-    border-radius: var(--bs-border-radius);
-    border: var(--bs-list-group-border-width) solid var(--bs-list-group-border-color);;
-}
-
-.tall {
-    height: 1000px;
-    width: 100%;
-}
 </style>

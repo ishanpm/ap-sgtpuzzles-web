@@ -4,7 +4,9 @@ export const genres = [
     "guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
     "netslide","palisade","pattern","pearl","pegs","range","rect","samegame","signpost",
     "singles","sixteen","slant","solo","tents","towers","tracks","twiddle","undead",
-    "unequal","unruly","untangle","group"
+    "unequal","unruly","untangle","group",
+
+    "abcd","ascent","boats","bricks","clusters","crossing","mathrax","rome","salad","seismic","spokes","sticks","subsets"
 ] as const;
 
 export type GenreKey = typeof genres[number] | "none"
@@ -333,5 +335,19 @@ export const genreInfo: {[x in GenreKey]: GenreInfoEntry} = {
         description: "Click a puzzle to start it.",
         helpLink: "",
         special: true
-    }
+    },
+
+    "abcd": {name: "abcd", description: "Placeholder"},
+    "ascent": {name: "ascent", description: "Placeholder"},
+    "boats": {name: "boats", description: "Placeholder"},
+    "bricks": {name: "bricks", description: "Placeholder"},
+    "clusters": {name: "clusters", description: "Placeholder"},
+    "crossing": {name: "crossing", description: "Placeholder"},
+    "mathrax": {name: "mathrax", description: "Placeholder"},
+    "rome": {name: "rome", description: "Placeholder"},
+    "salad": {name: "salad", description: "Placeholder"},
+    "seismic": {name: "seismic", description: "Placeholder"},
+    "spokes": {name: "spokes", description: "Placeholder"},
+    "sticks": {name: "sticks", description: "Placeholder"},
+    "subsets": {name: "subsets", description: "Placeholder"},
 }

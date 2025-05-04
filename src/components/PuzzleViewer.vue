@@ -4,6 +4,7 @@ import { Modal, Toast } from 'bootstrap';
 import type { GenrePresetElement, GenrePresetSubmenuElement, GenrePresetMenu } from '@/types/GenrePresetList';
 import { PuzzleState } from '@/types/PuzzleState';
 import type { GenreKey } from '@/genres';
+import { data } from 'alpinejs';
 
 interface PuzzleDialogStringControl {
     type: "string",
@@ -46,13 +47,16 @@ const errorText = ref("")
 
 const puzzleFrameBase = "puzzleframe.html"
 
+let puzzleSaveCallbacks: ((save: string) => void)[] = []
+
 //
 // Public interface
 //
 
 defineExpose({
     switchPuzzle, loadPuzzleFromString, showPreferences, selectPreset,
-    newPuzzle, puzzleFromId, puzzleFromSeed, restartPuzzle, solve, undo, redo
+    newPuzzle, puzzleFromId, puzzleFromSeed, restartPuzzle, solve, undo, redo,
+    getSaveData, setSaveData
 })
 
 const emit = defineEmits<{
@@ -136,11 +140,22 @@ function redo() {
     sendMessage("redoPuzzle")
 }
 
+function getSaveData(): Promise<string> { 
+    return new Promise((resolve) => {
+        puzzleSaveCallbacks.push(resolve)
+        sendMessage("savePuzzleData")
+    })
+}
+
+function setSaveData(save: string) {
+    sendMessage("loadPuzzleData", save)
+}
+
 //
 // Puzzle Frame Management
 //
 
-const messageHandlers: {[command: string]: (...args: any[]) => void | undefined} = {
+const messageHandlers: {[command: string]: (...args: any[]) => void} = {
     ready() {
         //console.log("puzzle viewer: ready")
     },
@@ -265,7 +280,12 @@ const messageHandlers: {[command: string]: (...args: any[]) => void | undefined}
         }
     },
     js_focus_canvas() {},
-    savePuzzleDataCallback() {}
+    savePuzzleDataCallback(save: string) {
+        for (let callback of puzzleSaveCallbacks) {
+            callback(save)
+        }
+        puzzleSaveCallbacks = []
+    }
 }
 
 function processMessage(event: MessageEvent) {

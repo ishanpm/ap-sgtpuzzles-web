@@ -133,9 +133,12 @@ export class PuzzlesAPConnection {
     }
 
     onPuzzleSolved(puzzle: PuzzleData) {
-        console.log("yay")
-
         if (!this.client.socket.connected) {
+            return;
+        }
+
+        if (!puzzle.index) {
+            console.warn("Tried to send check for puzzle with no index")
             return;
         }
 

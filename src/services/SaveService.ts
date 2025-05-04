@@ -1,4 +1,9 @@
+import { GameModel } from "@/types/GameModel";
+import type { GameSave, PuzzleDataSave, PuzzleSave, PuzzlesLocationSave } from "@/types/GameSave";
+import { PuzzleData, puzzleFromArchipelagoString, PuzzlesLocation } from "@/types/PuzzleData";
+import type { InjectionKey } from "vue";
 
+export const saveServiceKey = Symbol() as InjectionKey<SaveService>
 
 /**
  * Helper function to turn an IDBRequest into a Promise, for use with async/await.
@@ -27,10 +32,16 @@ async function* asIterator<T extends IDBCursor>(transaction: IDBRequest<T|null>)
     } while (cursor)
 }
 
-export class SaveService {
-    db?: IDBDatabase
+export class SaveService { 
+    db: Promise<IDBDatabase>
 
-    async openDatabase() {
+    constructor() {
+        this.db = new Promise((resolve, reject) => {
+            this.openDatabase(resolve)
+        })
+    }
+
+    async openDatabase(dbResolveCallback: (db: PromiseLike<IDBDatabase>) => void) {
         let dbOpenReq = indexedDB.open("ap-puzzles", 1);
     
         dbOpenReq.onupgradeneeded = function(event) {
@@ -46,34 +57,28 @@ export class SaveService {
             }
         };
     
-        this.db = await asPromise(dbOpenReq);
+        dbResolveCallback(asPromise(dbOpenReq));
     }
 
     async getFileList() {
-        if (!this.db) {
-            throw Error("SaveService accessed before initialization")
-        }
+        let db = await this.db;
 
-        let transaction = this.db.transaction("gamesave");
+        let transaction = db.transaction("gamesave");
         let gamesave = transaction.objectStore("gamesave");
 
-        let fileList = await asPromise(gamesave.getAll());
+        let fileList = await asPromise<GameSave[]>(gamesave.getAll());
 
-        //fileList = fileList.map(e => GameSave.fromObject(e));
+        let gameModels = fileList.map(this._inflateGameModel);
 
-        return fileList;
+        return gameModels;
     }
 
-    async deleteFile() {
-        if (!this.db) {
-            throw Error("SaveService accessed before initialization")
-        }
+    async deleteFile(id: number) {
+        let db = await this.db;
 
-        let id = 0; // FIXME
+        if (id == -1) return;
 
-        //if (this.id == -1) return;
-
-        const transaction = this.db.transaction(["gamesave","puzzlesave"], "readwrite");
+        const transaction = db.transaction(["gamesave","puzzlesave"], "readwrite");
         const gamesave = transaction.objectStore("gamesave");
         const puzzlesave = transaction.objectStore("puzzlesave");
 
@@ -91,8 +96,117 @@ export class SaveService {
 
         transaction.commit();
 
-        await Promise.allSettled(toAwait);
+        await Promise.allSettled(toAwait)
+    }
 
-        return;
+    async savePuzzleData(file: number, index: number, data: string) {
+        let db = await this.db;
+
+        const transaction = db.transaction("puzzlesave")
+        const puzzlesave = transaction.objectStore("puzzlesave")
+
+        let save = {
+            file,
+            index,
+            data
+        }
+
+        await asPromise(puzzlesave.put(save))
+    }
+
+    async loadPuzzleData(file: number, index: number): Promise<string | null> {
+        let db = await this.db;
+
+        const transaction = db.transaction("puzzlesave")
+        const puzzlesave = transaction.objectStore("puzzlesave")
+
+        let save = await asPromise<PuzzleSave | undefined>(puzzlesave.get([file, index]))
+
+        return save?.data ?? null
+    }
+
+    _inflateGameModel(gamesave: GameSave): GameModel {
+        let ret = new GameModel()
+        ret.filename = gamesave.filename ?? ""
+        ret.freeplay = false
+
+        if (gamesave.puzzleData) {
+            ret.puzzles = gamesave.puzzleData.map(this._inflatePuzzleData)
+        } else if (gamesave.puzzles && gamesave.puzzleLocked && gamesave.puzzleSolved && gamesave.baseSeed) {
+            // Load old version save files
+            for (let i = 0; i < gamesave.puzzleSolved.length; i++) {
+                let newPuzzle = puzzleFromArchipelagoString(gamesave.puzzles[i], gamesave.baseSeed, i+1)
+                newPuzzle.locked = gamesave.puzzleLocked[i]
+                newPuzzle.solved = newPuzzle.localSolved = gamesave.puzzleSolved[i]
+                ret.puzzles.push(newPuzzle)
+            }
+        }
+
+        return ret
+    }
+
+    _deflateGameModel(game: GameModel): GameSave {
+        return {
+            finished: false, //TODO
+            id: 9999999, //TODO
+            puzzleData: game.puzzles.map(this._deflatePuzzleData),
+            solveTarget: game.puzzles.length, //TODO
+            baseSeed: game.seed,
+            filename: game.filename,
+            host: "", //TODO
+            player: "", //TODO
+            password: "", //TODO
+            port: 0 //TODO
+        }
+    }
+
+    _inflatePuzzleData(save: PuzzleDataSave): PuzzleData {
+        let ret = new PuzzleData(save.genre)
+        ret.index = save.index
+        ret.locked = save.locked
+        ret.localSolved = save.localSolved
+        ret.solved = save.solved
+        ret.skipped = save.skipped
+        ret.params = save.params
+        ret.id = save.id
+        ret.seed = save.seed
+        ret.items = save.items.map(this._inflatePuzzleLocation)
+
+        return ret
+    }
+
+    _deflatePuzzleData(puzzle: PuzzleData): PuzzleDataSave {
+        return {
+            genre: puzzle.genre,
+            index: puzzle.index ?? 0,
+            items: puzzle.items?.map(this._deflatePuzzleLocation) ?? [],
+            localSolved: puzzle.localSolved,
+            solved: puzzle.solved,
+            locked: puzzle.locked,
+            skipped: puzzle.skipped,
+            params: puzzle.params,
+            id: puzzle.id,
+            seed: puzzle.seed
+        }
+    }
+
+    _inflatePuzzleLocation(save: PuzzlesLocationSave): PuzzlesLocation {
+        let ret = new PuzzlesLocation(save.name)
+        ret.collected = save.collected
+        ret.hint = save.hint
+        ret.itemName = save.itemName
+        ret.type = save.type
+
+        return ret
+    }
+
+    _deflatePuzzleLocation(location: PuzzlesLocation): PuzzlesLocationSave {
+        return {
+            collected: location.collected,
+            hint: location.hint,
+            name: location.name,
+            type: location.type,
+            itemName: location.itemName
+        }
     }
 }
