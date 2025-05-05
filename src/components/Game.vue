@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { genreInfo, genres } from "@/genres";
 import PuzzleContainer from "./PuzzleContainer.vue";
-import { computed, inject, onMounted, reactive, ref, shallowRef, useId, useTemplateRef, watch } from "vue";
+import { computed, inject, onMounted, reactive, ref, shallowRef, useId, useModel, useTemplateRef, watch } from "vue";
 import { PuzzlesAPConnection, puzzlesAPConnectionKey } from "@/services/PuzzlesAPConnection";
 import { GameModel } from "@/types/GameModel";
 import { PuzzleData } from "@/types/PuzzleData";
 import { PuzzleState } from "@/types/PuzzleState";
 import PuzzleListEntry from "./PuzzleListEntry.vue";
+
+const gameModel = defineModel<GameModel>()
 
 const puzzleContainer = useTemplateRef("puzzleContainer")
 
@@ -19,7 +21,6 @@ const connectionPlayer = ref("Player1")
 const errorText = ref("")
 
 const apConnection = inject(puzzlesAPConnectionKey) as PuzzlesAPConnection
-const gameModel = ref(getFreeplayPuzzleState())
 
 const selectedPuzzle = ref<PuzzleData>()
 
@@ -31,7 +32,7 @@ const filters = ref({
 })
 
 const sortedPuzzles = computed(() => {
-    if (!gameModel.value.puzzles) return []
+    if (!gameModel.value?.puzzles) return []
 
     let puzzleList = gameModel.value.puzzles.slice()
     puzzleList = puzzleList.filter(e => {
@@ -120,11 +121,13 @@ function onPuzzleSolved() {
 }
 
 watch(selectedPuzzle, (puzzle) => {
+    if (!gameModel.value) return;
+
     if (!puzzle) {
         puzzleContainer.value?.switchPuzzle("none")
         return;
     }
-    puzzleContainer.value?.switchPuzzle(puzzle.genre, puzzle.seed, !gameModel.value.freeplay)
+    puzzleContainer.value?.switchPuzzle(puzzle.genre, puzzle.seed, !gameModel.value?.freeplay)
 })
 
 watch(gameModel, () => {
@@ -138,11 +141,11 @@ onMounted(() => {
 
 <template>
     <div>
-        <div class="container content">
+        <div class="container content my-2">
             <div class="row">
                 <div class="col-4">
-                    <div class="sidebar">
-                        <form class="connection-info" @submit.prevent="connect">
+                    <div class="sidebar" v-if="gameModel">
+                        <!--form class="connection-info" @submit.prevent="connect">
                             <div class="mb-3">
                                 <label :for="`connection-host-${id}`" class="form-label">Host</label>
                                 <input v-model="connectionHost" class="form-control" :id="`connection-host-${id}`">
@@ -156,7 +159,7 @@ onMounted(() => {
                                 <input v-model="connectionPlayer" class="form-control" :id="`connection-player-${id}`">
                             </div>
                             <button type="submit" class="btn btn-primary">Connect</button>
-                        </form>
+                        </form-->
                         <div class="puzzlelist list-group list-group-flush">
                             <PuzzleListEntry v-for="puzzle in sortedPuzzles" :puzzle="puzzle" :selected-puzzle="selectedPuzzle" :game-model="gameModel" @click="selectedPuzzle = puzzle"/>
                         </div>
@@ -200,7 +203,7 @@ onMounted(() => {
 
 .sidebar {
     position: sticky;
-    height: calc(100vh - 2rem - 56px);
+    height: calc(100vh - 2.5rem - 56px);
     width: 100%;
     display: flex;
     flex-direction: column;

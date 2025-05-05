@@ -125,19 +125,24 @@ export class SaveService {
         return save?.data ?? null
     }
 
-    _inflateGameModel(gamesave: GameSave): GameModel {
+    _inflateGameModel(save: GameSave): GameModel {
         let ret = new GameModel()
-        ret.filename = gamesave.filename ?? ""
         ret.freeplay = false
+        ret.host = save.host
+        ret.port = save.port
+        ret.password = save.password
+        ret.player = save.player
+        ret.filename = save.filename ?? save.player
+        ret.seed = save.baseSeed ?? ""
 
-        if (gamesave.puzzleData) {
-            ret.puzzles = gamesave.puzzleData.map(this._inflatePuzzleData)
-        } else if (gamesave.puzzles && gamesave.puzzleLocked && gamesave.puzzleSolved && gamesave.baseSeed) {
+        if (save.puzzleData) {
+            ret.puzzles = save.puzzleData.map(this._inflatePuzzleData)
+        } else if (save.puzzles && save.puzzleLocked && save.puzzleSolved && save.baseSeed) {
             // Load old version save files
-            for (let i = 0; i < gamesave.puzzleSolved.length; i++) {
-                let newPuzzle = puzzleFromArchipelagoString(gamesave.puzzles[i], gamesave.baseSeed, i+1)
-                newPuzzle.locked = gamesave.puzzleLocked[i]
-                newPuzzle.solved = newPuzzle.localSolved = gamesave.puzzleSolved[i]
+            for (let i = 0; i < save.puzzleSolved.length; i++) {
+                let newPuzzle = puzzleFromArchipelagoString(save.puzzles[i], save.baseSeed, i+1)
+                newPuzzle.locked = save.puzzleLocked[i]
+                newPuzzle.solved = newPuzzle.localSolved = save.puzzleSolved[i]
                 ret.puzzles.push(newPuzzle)
             }
         }

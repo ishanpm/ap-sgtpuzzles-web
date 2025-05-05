@@ -2,17 +2,15 @@ import { genreInfo, genres, type GenreKey } from "@/genres"
 import { PuzzleData } from "./PuzzleData"
 
 export class GameModel {
-    filename: string
-    puzzles: PuzzleData[]
-    seed: string
-    freeplay: boolean
+    filename?: string = ""
+    host?: string
+    port?: number
+    player?: string
+    password?: string
 
-    constructor() {
-        this.filename = "";
-        this.puzzles = [];
-        this.seed = "";
-        this.freeplay = false
-    }
+    puzzles: PuzzleData[] = []
+    seed: string = ""
+    freeplay: boolean = false
 }
 
 export function getFreeplayGame(includeHidden: boolean = false) {
