@@ -146,7 +146,7 @@ var statusbar = document.getElementById("statusbar");
 // JS side; the C side, which expects a blitter to look like a struct,
 // simply defines the struct to contain that integer id.
 var blittercount = 0;
-var blitters = [];
+var blitters = new Map();
 
 // State for the dialog-box mechanism. dlg_dimmer and dlg_form are the
 // page-darkening overlay and the actual dialog box respectively;
@@ -213,6 +213,17 @@ var resizable_div = document.getElementById("resizable");
 // puzzle to fit.
 var containing_div = document.getElementById("puzzlecanvascontain");
 
+// The current front-end scale factor.  This is how many logical
+// pixels (as seen by the mid end and back end) there are to one
+// physical pixel in the canvas.  It's applied as a scaling to the
+// graphics context and also used to adjust co-ordinates for things
+// that don't pass through that scaling.
+//
+// In order to keep pixel boundaries where the back end expects them
+// to be, this is always an integer and at least 1, so it's not
+// necessarily the same as window.devicePixelRatio.
+var fe_scale = 1;
+
 // Helper function to find the absolute position of a given DOM
 // element on a page, by iterating upwards through the DOM finding
 // each element's offset from its parent, and thus calculating the
@@ -243,8 +254,8 @@ function relative_mouse_coords(event, element) {
 function canvas_mouse_coords(event, element) {
     var rcoords = relative_mouse_coords(event, element);
     // Assume that the CSS object-fit property is "fill" (the default).
-    var xscale = element.width / element.offsetWidth;
-    var yscale = element.height / element.offsetHeight;
+    var xscale = element.width / element.offsetWidth / fe_scale;
+    var yscale = element.height / element.offsetHeight / fe_scale;
     return {x: rcoords.x * xscale, y: rcoords.y * yscale}
 }
 
@@ -344,13 +355,32 @@ function initPuzzle() {
 
     // Stop right-clicks on the puzzle from popping up a context menu.
     // We need those right-clicks!
-    onscreen_canvas.oncontextmenu = function(event) { return false; }
+    onscreen_canvas.oncontextmenu = function(event) {
+        if (touchEmulationActive && !touchEmulationDown) {
+            touchEmulationButton = 2;
+            touchEmulationDown = true;
+            var xy = canvas_mouse_coords(event, onscreen_canvas);
+            mousedown(xy.x, xy.y, touchEmulationButton)
+        }
+        return false;
+    }
 
     // Set up mouse handlers. We do a bit of tracking of the currently
     // pressed mouse buttons, to avoid sending mousemoves with no
     // button down (our puzzles don't want those events).
     var mousedown = Module.cwrap('mousedown', 'boolean',
                                  ['number', 'number', 'number']);
+    var mousemove = Module.cwrap('mousemove', 'boolean',
+                                 ['number', 'number', 'number']);
+    var mouseup = Module.cwrap('mouseup', 'boolean',
+                               ['number', 'number', 'number']);
+    
+    var touchEmulationDown = false;
+    var touchEmulationActive = false;
+    var touchEmulationButton = 0;
+    var touchEmulationStartPos = {x: 0, y: 0};
+    var touchEmulationStartScreenPos = {x: 0, y: 0};
+    const touchEmulationDragThreshold = 10;
 
     var button_phys2log = [null, null, null];
     var buttons_down = function() {
@@ -361,53 +391,108 @@ function initPuzzle() {
         return toret;
     };
 
-    onscreen_canvas.onpointerdown = function(event) {
-        // Arrange that all mouse (and pointer) events are sent to
-        // this element until all buttons are released.  We can assume
-        // that if we managed to receive a pointerdown event,
-        // Element.setPointerCapture() is available.
-        onscreen_canvas.setPointerCapture(event.pointerId);
-    }
-    onscreen_canvas.onmousedown = function(event) {
+    // Capture everything except pinch zoom events
+    onscreen_canvas.style.touchAction = "pinch-zoom"
+
+    onscreen_canvas.onpointerdown = function (event) {
+        if (!event.isPrimary) {
+            return;
+        }
+
         if (event.button >= 3)
             return;
+
+        onscreen_canvas.setPointerCapture(event.pointerId)
+        onscreen_canvas.focus()
 
         var xy = canvas_mouse_coords(event, onscreen_canvas);
-        var logbutton = event.button;
-        if (event.shiftKey)
-            logbutton = 1;   // Shift-click overrides to middle button
-        else if (event.ctrlKey)
-            logbutton = 2;   // Ctrl-click overrides to right button
 
-        if (mousedown(xy.x, xy.y, logbutton))
-            event.preventDefault();
-        button_phys2log[event.button] = logbutton;
+        touchEmulationActive = event.button == 0 && event.pointerType.includes("touch");
+        if (touchEmulationActive) {
+            // Wait for possible long press (via oncontextmenu)
+            touchEmulationButton = 0;
+            touchEmulationDown = false;
+            touchEmulationStartPos = xy;
+            touchEmulationStartScreenPos = {x: event.screenX, y: event.screenY}
+        } else {
+            var logbutton = event.button;
+            if (event.shiftKey)
+                logbutton = 1;   // Shift-click overrides to middle button
+            else if (event.ctrlKey)
+                logbutton = 2;   // Ctrl-click overrides to right button
 
-        set_capture(onscreen_canvas, event);
-    };
-    var mousemove = Module.cwrap('mousemove', 'boolean',
-                                 ['number', 'number', 'number']);
-    onscreen_canvas.onmousemove = function(event) {
-        var down = buttons_down();
-        if (down) {
-            var xy = canvas_mouse_coords(event, onscreen_canvas);
-            if (mousemove(xy.x, xy.y, down))
+            if (mousedown(xy.x, xy.y, logbutton))
                 event.preventDefault();
+            button_phys2log[event.button] = logbutton;
         }
     };
-    var mouseup = Module.cwrap('mouseup', 'boolean',
-                               ['number', 'number', 'number']);
-    onscreen_canvas.onmouseup = function(event) {
+    onscreen_canvas.onpointermove = function (event) {
+        if (!event.isPrimary) {
+            return false;
+        }
+
+        if (touchEmulationActive) {
+            event.preventDefault();
+
+            if (!touchEmulationDown) {
+                // Check if movement exceeds threshold
+                var dx = event.screenX - touchEmulationStartScreenPos.x
+                var dy = event.screenY - touchEmulationStartScreenPos.y
+                const thresholdSquared = touchEmulationDragThreshold*touchEmulationDragThreshold;
+                if (dx*dx + dy*dy >= thresholdSquared) {
+                    touchEmulationDown = true;
+                    // Send a mousedown if we haven't yet
+                    mousedown(touchEmulationStartPos.x, touchEmulationStartPos.y, touchEmulationButton)
+                }
+            }
+            if (touchEmulationDown) {
+                var xy = canvas_mouse_coords(event, onscreen_canvas);
+                mousemove(xy.x, xy.y, 1 << touchEmulationButton)
+            }
+        } else {
+            var down = buttons_down();
+            if (down) {
+                var xy = canvas_mouse_coords(event, onscreen_canvas);
+                if (mousemove(xy.x, xy.y, down))
+                    event.preventDefault();
+            }
+        }
+    };
+    onscreen_canvas.onpointerup = function (event) {
+        if (!event.isPrimary) {
+            return;
+        }
+
         if (event.button >= 3)
             return;
 
-        if (button_phys2log[event.button] !== null) {
+        if (touchEmulationActive) {
             var xy = canvas_mouse_coords(event, onscreen_canvas);
-            if (mouseup(xy.x, xy.y, button_phys2log[event.button]))
+            if (!touchEmulationDown) {
+                // Send a mousedown if we haven't yet
+                mousedown(xy.x, xy.y, touchEmulationButton)
+            }
+            if (mouseup(xy.x, xy.y, touchEmulationButton))
                 event.preventDefault();
-            button_phys2log[event.button] = null;
+            touchEmulationDown = false;
+            touchEmulationActive = false;
+        } else {
+            if (button_phys2log[event.button] !== null) {
+                var xy = canvas_mouse_coords(event, onscreen_canvas);
+                if (mouseup(xy.x, xy.y, button_phys2log[event.button]))
+                    event.preventDefault();
+                button_phys2log[event.button] = null;
+            }
         }
     };
+    onscreen_canvas.onpointercancel = function (event) {
+        if (!touchEmulationDown) {
+            // Send a mouseup if we have to
+            mouseup(touchEmulationStartPos.x, touchEmulationStartPos.y, touchEmulationButton)
+        }
+        touchEmulationDown = false;
+        touchEmulationActive = false;
+    }
 
     // Set up keyboard handlers. We call event.preventDefault()
     // in the keydown handler if it looks like we might have
@@ -2816,27 +2901,30 @@ var ASM_CONSTS = {
           return toret;
       }
 
-  function _js_canvas_clip_rect(x, y, w, h) {
+  function _js_canvas_blitter_load(dr, bl, x, y) {
+          // Temporarily turn off the effects of fe_scale so we can do
+          // it ourselves.
+          ctx.save();
+          ctx.resetTransform();
+          x *= fe_scale; y *= fe_scale;
+          ctx.drawImage(blitters.get(bl), x, y);
+          ctx.restore();
+      }
+
+  function _js_canvas_blitter_save(dr, bl, x, y) {
+          var blitter_ctx = blitters.get(bl).getContext('2d', { alpha: false });
+          x *= fe_scale; y *= fe_scale;
+          blitter_ctx.drawImage(offscreen_canvas, -x, -y);
+      }
+
+  function _js_canvas_clip(dr, x, y, w, h) {
           ctx.save();
           ctx.beginPath();
           ctx.rect(x, y, w, h);
           ctx.clip();
       }
 
-  function _js_canvas_copy_from_blitter(id, x, y, w, h) {
-          ctx.drawImage(blitters[id],
-                        0, 0, w, h,
-                        x, y, w, h);
-      }
-
-  function _js_canvas_copy_to_blitter(id, x, y, w, h) {
-          var blitter_ctx = blitters[id].getContext('2d', { alpha: false });
-          blitter_ctx.drawImage(offscreen_canvas,
-                                x, y, w, h,
-                                0, 0, w, h);
-      }
-
-  function _js_canvas_draw_circle(x, y, r, fill, outline) {
+  function _js_canvas_draw_circle(dr, x, y, r, fill, outline) {
           ctx.beginPath();
           ctx.arc(x + 0.5, y + 0.5, r, 0, 2*Math.PI);
           if (fill >= 0) {
@@ -2866,7 +2954,7 @@ var ASM_CONSTS = {
           ctx.fillRect(x2, y2, 1, 1);
       }
 
-  function _js_canvas_draw_poly(pointptr, npoints, fill, outline) {
+  function _js_canvas_draw_poly(dr, pointptr, npoints, fill, outline) {
           ctx.beginPath();
           ctx.moveTo(getValue(pointptr  , 'i32') + 0.5,
                      getValue(pointptr+4, 'i32') + 0.5);
@@ -2885,7 +2973,7 @@ var ASM_CONSTS = {
           ctx.stroke();
       }
 
-  function _js_canvas_draw_rect(x, y, w, h, colour) {
+  function _js_canvas_draw_rect(dr, x, y, w, h, colour) {
           ctx.fillStyle = colours[colour];
           ctx.fillRect(x, y, w, h);
       }
@@ -2900,7 +2988,7 @@ var ASM_CONSTS = {
           ctx.fillText(UTF8ToString(text), x, y);
       }
 
-  function _js_canvas_draw_update(x, y, w, h) {
+  function _js_canvas_draw_update(dr, x, y, w, h) {
           /*
            * Currently we do this in a really simple way, just by taking
            * the smallest rectangle containing all updates so far. We
@@ -2909,13 +2997,14 @@ var ASM_CONSTS = {
            * the whole thing beyond a certain threshold) but this will
            * do for now.
            */
+          x *= fe_scale; y *= fe_scale; w *= fe_scale; h *= fe_scale;
           if (update_xmin === undefined || update_xmin > x) update_xmin = x;
           if (update_ymin === undefined || update_ymin > y) update_ymin = y;
           if (update_xmax === undefined || update_xmax < x+w) update_xmax = x+w;
           if (update_ymax === undefined || update_ymax < y+h) update_ymax = y+h;
       }
 
-  function _js_canvas_end_draw() {
+  function _js_canvas_end_draw(dr) {
           if (update_xmin !== undefined) {
               var onscreen_ctx =
                   onscreen_canvas.getContext('2d', { alpha: false });
@@ -2980,8 +3069,8 @@ var ASM_CONSTS = {
           return ret;
       }
 
-  function _js_canvas_free_blitter(id) {
-          blitters[id] = null;
+  function _js_canvas_free_blitter(bl) {
+          blitters.delete(bl);
       }
 
   function _js_canvas_get_preferred_size(wp, hp) {
@@ -2994,12 +3083,12 @@ var ASM_CONSTS = {
           return false;
       }
 
-  function _js_canvas_new_blitter(w, h) {
-          var id = blittercount++;
-          blitters[id] = document.createElement("canvas");
-          blitters[id].width = w;
-          blitters[id].height = h;
-          return id;
+  function _js_canvas_new_blitter(bl, w, h) {
+          w *= fe_scale; h *= fe_scale;
+          var new_blitter = document.createElement("canvas");
+          new_blitter.width = w;
+          new_blitter.height = h;
+          blitters.set(bl, new_blitter);
       }
 
   function _js_canvas_remove_statusbar() {
@@ -3009,7 +3098,7 @@ var ASM_CONSTS = {
           statusbar = null;
       }
 
-  function _js_canvas_set_size(w, h) {
+  function _js_canvas_set_size(w, h, new_fe_scale) {
           sendMessage("js_canvas_set_size", w, h);
           onscreen_canvas.width = w;
           offscreen_canvas.width = w;
@@ -3025,18 +3114,21 @@ var ASM_CONSTS = {
   
           onscreen_canvas.height = h;
           offscreen_canvas.height = h;
+          fe_scale = new_fe_scale;
+          ctx.resetTransform();
+          ctx.scale(fe_scale, fe_scale);
       }
 
-  function _js_canvas_set_statusbar(ptr) {
+  function _js_canvas_start_draw(dr) {
+          update_xmin = update_xmax = update_ymin = update_ymax = undefined;
+      }
+
+  function _js_canvas_status_bar(dr, ptr) {
           sendMessage("js_canvas_set_statusbar", UTF8ToString(ptr));
           statusbar.textContent = UTF8ToString(ptr);
       }
 
-  function _js_canvas_start_draw() {
-          update_xmin = update_xmax = update_ymin = update_ymax = undefined;
-      }
-
-  function _js_canvas_unclip() {
+  function _js_canvas_unclip(dr) {
           ctx.restore();
       }
 
@@ -3323,9 +3415,9 @@ var asmLibraryArg = {
   "js_activate_timer": _js_activate_timer,
   "js_add_preset": _js_add_preset,
   "js_add_preset_submenu": _js_add_preset_submenu,
-  "js_canvas_clip_rect": _js_canvas_clip_rect,
-  "js_canvas_copy_from_blitter": _js_canvas_copy_from_blitter,
-  "js_canvas_copy_to_blitter": _js_canvas_copy_to_blitter,
+  "js_canvas_blitter_load": _js_canvas_blitter_load,
+  "js_canvas_blitter_save": _js_canvas_blitter_save,
+  "js_canvas_clip": _js_canvas_clip,
   "js_canvas_draw_circle": _js_canvas_draw_circle,
   "js_canvas_draw_line": _js_canvas_draw_line,
   "js_canvas_draw_poly": _js_canvas_draw_poly,
@@ -3339,8 +3431,8 @@ var asmLibraryArg = {
   "js_canvas_new_blitter": _js_canvas_new_blitter,
   "js_canvas_remove_statusbar": _js_canvas_remove_statusbar,
   "js_canvas_set_size": _js_canvas_set_size,
-  "js_canvas_set_statusbar": _js_canvas_set_statusbar,
   "js_canvas_start_draw": _js_canvas_start_draw,
+  "js_canvas_status_bar": _js_canvas_status_bar,
   "js_canvas_unclip": _js_canvas_unclip,
   "js_deactivate_timer": _js_deactivate_timer,
   "js_default_colour": _js_default_colour,
