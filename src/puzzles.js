@@ -1,6 +1,7 @@
 const {
     Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE, LocationsManager, ReceivedItemsPacket,
-    CLIENT_STATUS
+    clientStatuses,
+    itemsHandlingFlags
 } = require("archipelago.js");
 const Alpine = require('alpinejs').default;
 const SaveData = require("./savedata.js");
@@ -12,6 +13,11 @@ document.addEventListener("alpine:init", onInit)
 
 let puzzleframe;
 let apReady = false;
+
+/**
+ * @type{import("archipelago.js").JSONRecord}
+ */
+let slotData;
 
 /**
  * @type{Client}
@@ -76,7 +82,7 @@ class ArchipelagoPuzzle {
         if (apReady) {
             let locationId = locationNameToId(`Puzzle ${this.index} Reward`);
 
-            client.locations.check(locationId);
+            client.check(locationId);
         }
     }
 
@@ -230,7 +236,7 @@ function initStores() {
         },
         onFinishClick() {
             if (this.solveTarget !== null && this.solveCount >= this.solveTarget) {
-                client.updateStatus(CLIENT_STATUS.GOAL);
+                client.updateStatus(clientStatuses.goal);
                 this.finished = true;
                 Alpine.store("gamesaves").markFinished();
             }
@@ -679,7 +685,7 @@ async function loadPuzzleData() {
 }
 
 function hasItem(itemId) {
-    return client.items.received.findIndex(e => e.item == itemId) > -1;
+    return client.items.received.findIndex(e => e.id == itemId) > -1;
 }
 
 function syncAPStatus() {
@@ -702,7 +708,7 @@ function syncAPStatus() {
         let itemId = itemNameToId(`Puzzle ${entry.index}`);
         let locationId = locationNameToId(`Puzzle ${entry.index} Reward`);
 
-        if (!entry.collected && client.locations.checked.includes(locationId)) {
+        if (!entry.collected && client.room.checkedLocations.includes(locationId)) {
             entry.collected = true;
             dirty = true;
         } else if (!entry.collected) {
@@ -751,8 +757,6 @@ async function createFile(hostname, port, player, password) {
 
         return;
     }
-
-    let slotData = client.data.slotData;
 
     let fileVersion = slotData.file_version ?? 0
 
@@ -832,8 +836,6 @@ async function loadFile(file, secretMode, newConnection) {
     if (connectOk) {
         // Verify puzzle list and seed match
         function anyMismatch() {
-            let slotData = client.data.slotData;
-
             if (file.baseSeed != "" + slotData.world_seed) return true;
             if (file.puzzles.length != slotData.puzzles.length) return true;
 
@@ -930,40 +932,40 @@ async function connectAP(hostname, port, player, password) {
     }
 
     // TODO probably unnecessary to sync both due to ReceivedItems and RoomUpdate..?
-    client.addListener("ReceivedItems", onReceiveItems);
-    client.addListener("RoomUpdate", syncAPStatus);
-    client.addListener("PacketReceived", logEvent);
+    client.socket.on("receivedItems", onReceiveItems);
+    client.socket.on("roomUpdate", syncAPStatus);
+    client.socket.on("receivedPacket", logEvent);
 
     console.log("connecting to AP...");
 
     const connectionInfo = {
-        hostname: hostname,
-        port: port,
-        game: "Simon Tatham's Portable Puzzle Collection",
-        name: player,
-        password: password,
-        items_handling: ITEMS_HANDLING_FLAGS.REMOTE_ALL,
+        password: password ?? ""
     };
 
-    await client.connect(connectionInfo);
+    let connectionURL = `${hostname}:${port}`
+    const game = "Simon Tatham's Portable Puzzle Collection"
+
+    slotData = await client.login(connectionURL, player, game, connectionInfo);
 
     console.log("connected to AP");
+
+    syncAPStatus();
 }
 
 function itemIdToName(id) {
-    return client.data.package.get("Simon Tatham's Portable Puzzle Collection").item_id_to_name[id]
+    return client.package.findPackage("Simon Tatham's Portable Puzzle Collection").reverseItemTable[id]
 }
 
 function itemNameToId(name) {
-    return client.data.package.get("Simon Tatham's Portable Puzzle Collection").item_name_to_id[name]
+    return client.package.findPackage("Simon Tatham's Portable Puzzle Collection").itemTable[name]
 }
 
 function locationIdToName(id) {
-    return client.data.package.get("Simon Tatham's Portable Puzzle Collection").location_id_to_name[id]
+    return client.package.findPackage("Simon Tatham's Portable Puzzle Collection").reverseLocationTable[id]
 }
 
 function locationNameToId(name) {
-    return client.data.package.get("Simon Tatham's Portable Puzzle Collection").location_name_to_id[name]
+    return client.package.findPackage("Simon Tatham's Portable Puzzle Collection").locationTable[name]
 }
 
 /**
@@ -996,7 +998,7 @@ function loadFileData(file, secretMode) {
         if (isFreeplay) {
             newEntry = ArchipelagoPuzzle.fromPuzzlesString(file.puzzles[i], null, i+1)
 
-            if (genreInfo[newEntry.genre].hidden && !secretMode) {
+            if ((genreInfo[newEntry.genre].hidden && !secretMode) || genreInfo[newEntry.genre].evenMoreHidden) {
                 // Skip hidden genres
                 continue;
             }
@@ -1014,7 +1016,7 @@ function disconnectAP() {
     if (client) {
         apReady = false;
         console.log("disconnecting from AP...");
-        client.disconnect();
+        client.socket.disconnect();
     }
 }
 

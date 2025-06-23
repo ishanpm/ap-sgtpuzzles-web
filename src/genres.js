@@ -7,8 +7,11 @@ export const genres = [
     "guess","inertia","keen","lightup","loopy","magnets","map","mines","mosaic","net",
     "netslide","palisade","pattern","pearl","pegs","range","rect","samegame","signpost",
     "singles","sixteen","slant","solo","tents","towers","tracks","twiddle","undead",
-    "unequal","unruly","untangle","group"
-];
+    "unequal","unruly","untangle","group",
+
+    "abcd", "ascent", "boats", "bricks", "clusters", "crossing", "mathrax", "rome",
+    "salad", "seismic", "spokes", "sticks", "subsets"
+]
 
 /**
  * @typedef {Object} ParameterFormatProperty
@@ -297,5 +300,16 @@ export const genreInfo = {
         name: "No puzzle loaded",
         description: "Click a puzzle to start it.",
         helpLink: ""
+    }
+}
+
+for (let genre of ["abcd", "ascent", "boats", "bricks", "clusters", "crossing", "mathrax", "rome",
+    "salad", "seismic", "spokes", "sticks", "subsets"]) {
+    genreInfo[genre] = {
+        name: genre,
+        description: "Unsupported puzzle; subject to change.",
+        helpLink: "https://github.com/x-sheep/puzzles-unreleased",
+        hidden: true,
+        evenMoreHidden: true
     }
 }
