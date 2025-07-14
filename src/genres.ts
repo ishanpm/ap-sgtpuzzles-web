@@ -23,10 +23,12 @@ interface ParameterFormatProperty {
     name: string
     /** Type of this property */
     type: ('boolean'|'choice'|'number'|'string')
-    /** Minimum allowed value for numeric or choice properties */
+    /** Minimum allowed value for numeric properties */
     min?: number
-    /** Maximum allowed value for numeric or choice properties */
+    /** Maximum allowed value for numeric properties */
     max?: number
+    /** String keys for possible choices */
+    choices?: string[]
 }
 
 interface ParameterFormatCodeComponent {

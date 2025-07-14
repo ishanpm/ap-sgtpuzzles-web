@@ -39,11 +39,7 @@ npm run dev
 
 To build for production, run `npm run build` and copy the files from `/dist`.
 
-If you're not running Linux, you can do what the build script does manually:
-
-- Build the `ap-sgtpuzzles/` directory using Emscripten (good luck lol)
-- Create the folder `public/res/wasm` folder and copy the built `.js` and `.wasm` files to there
-- Copy the built `help/` folder to `public/help/`
+If you're not running Linux, you can manually build the `ap-sgtpuzzles/` directory using Emscripten into `ap-sgtpuzzles/build-emscripten` instead of running `./build-wasm.sh` (good luck lol).
 
 ## License
 
