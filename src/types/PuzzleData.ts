@@ -13,8 +13,8 @@ export class PuzzleData {
     params?: string
     /** ID string used to generate the puzzle */
     id?: string
-    /** Index of the puzzle in the world */
-    index?: number
+    /** Key of the puzzle in the world */
+    key?: string
     /** Seed used to generate the puzzle */
     seed?: string
     items?: PuzzlesLocation[]
@@ -60,7 +60,7 @@ export function puzzleFromArchipelagoString(
     options ??= {}
 
     let newPuzzle = new PuzzleData(genre);
-    newPuzzle.index = index;
+    newPuzzle.key = ""+index;
     newPuzzle.params = genreParamsMatch[3] ?? "";
     newPuzzle.seed = `${newPuzzle.params}#${seed}`
     newPuzzle.locked = options.locked ?? false

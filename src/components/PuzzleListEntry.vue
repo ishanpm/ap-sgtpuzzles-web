@@ -10,8 +10,9 @@ defineEmits<{
 
 const props = defineProps<{
     puzzle: PuzzleData,
-    selectedPuzzle?: PuzzleData
-    gameModel: GameModel
+    selectedPuzzleKey?: string,
+    gameModel: GameModel,
+    to: string
 }>()
 
 const status = computed(() => {
@@ -35,10 +36,9 @@ const status = computed(() => {
 </script>
 
 <template>
-    <a class="list-group-item puzzle-list-item"
-            :class="{'active': puzzle.index == selectedPuzzle?.index, 'disabled': puzzle.locked, [status]: !gameModel.freeplay}"
-            href="#"
-            @click="payload => $emit('click', payload)">
+    <RouterLink class="list-group-item puzzle-list-item"
+            :class="{'active': ''+puzzle.key == selectedPuzzleKey, 'disabled': puzzle.locked, [status]: !gameModel.freeplay}"
+            :to="to">
         <div class="d-flex">
             <div v-if="!gameModel.freeplay" class="puzzle-status-icon align-self-center me-1">
                 <i v-if="status == 'locked'" class="bi bi-lock" role="img" title="Locked"></i>
@@ -50,13 +50,13 @@ const status = computed(() => {
             <div class="align-self-stretch flex-fill">
                 <div class="flex-fill d-flex w-100 justify-content-between">
                     <h5 class="mb-1">{{ genreInfo[puzzle.genre].name }}</h5>
-                    <small v-if="!gameModel.freeplay" class="">#{{ puzzle.index }}</small>
+                    <small v-if="!gameModel.freeplay" class="">{{ puzzle.key }}</small>
                 </div>
 
                 <p v-if="!gameModel.freeplay" class="mb-1">{{ puzzle.params }}</p>
             </div>
         </div>
-    </a>
+    </RouterLink>
 </template>
 
 <style lang="scss">

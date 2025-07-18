@@ -1,14 +1,21 @@
 <script setup lang="ts">
-import { genreInfo, genres } from "@/genres";
+import { genreCollections, genreInfo, genres } from "@/genres";
 import PuzzleContainer from "./PuzzleContainer.vue";
-import { computed, inject, onMounted, reactive, ref, shallowRef, useId, useModel, useTemplateRef, watch } from "vue";
+import { computed, inject, onMounted, reactive, ref, shallowRef, useId, useModel, useTemplateRef, watch, watchEffect } from "vue";
 import { PuzzlesAPConnection, puzzlesAPConnectionKey } from "@/services/PuzzlesAPConnection";
 import { GameModel } from "@/types/GameModel";
 import { PuzzleData } from "@/types/PuzzleData";
 import { PuzzleState } from "@/types/PuzzleState";
 import PuzzleListEntry from "./PuzzleListEntry.vue";
+import { useRoute } from "vue-router";
 
 const gameModel = defineModel<GameModel>()
+const props = defineProps<{
+    fileId: string,
+    puzzle?: string
+}>()
+
+const route = useRoute()
 
 const puzzleContainer = useTemplateRef("puzzleContainer")
 
@@ -58,14 +65,28 @@ const sortedPuzzles = computed(() => {
                 break;
 
             case "number":
-                if (a.index !== undefined && b.index !== undefined) {
-                    return a.index - b.index
+                if (a.key === undefined || b.key === undefined) {
+                    if (a.key !== undefined && b.key === undefined) return -1
+                    if (a.key === undefined && b.key !== undefined) return 1
+                } else {
+                    if (a.key < b.key) return -1
+                    if (a.key > b.key) return 1
                 }
                 break;
 
             case "genre":
                 if (a.genre < b.genre) return -1
                 if (a.genre > b.genre) return 1
+                break;
+            
+            case "collection":
+                var collectionA = genreInfo[a.genre].collection
+                var collectionIndexA = genreCollections.findIndex(collection => collection.key == collectionA)
+                var collectionB = genreInfo[b.genre].collection
+                var collectionIndexB = genreCollections.findIndex(collection => collection.key == collectionB)
+
+                if (collectionIndexA < collectionIndexB) return -1
+                if (collectionIndexA > collectionIndexB) return 1
                 break;
             }
         }
@@ -76,12 +97,24 @@ const sortedPuzzles = computed(() => {
     return puzzleList
 })
 
+function updatePuzzle() {
+    if (!gameModel.value) return;
+    const newPuzzle = selectedPuzzle.value
+    console.log(`Selected puzzle`, newPuzzle)
+
+    if (!newPuzzle) {
+        puzzleContainer.value?.switchPuzzle("none")
+        return;
+    }
+    puzzleContainer.value?.switchPuzzle(newPuzzle.genre, newPuzzle.seed, !gameModel.value?.freeplay)
+}
+
 function getFreeplayPuzzleState() {
     let index = 1
 
     let puzzles = genres.map(g => {
         let puzzle = new PuzzleData(g)
-        puzzle.index = index++
+        puzzle.key = g
         return puzzle
     })
 
@@ -94,7 +127,6 @@ function getFreeplayPuzzleState() {
 }
 
 async function connect() {
-
     try {
         gameModel.value = (await apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)).value
     } catch (e) {
@@ -120,22 +152,28 @@ function onPuzzleSolved() {
     puzzle.localSolved = true
 }
 
-watch(selectedPuzzle, (puzzle) => {
-    if (!gameModel.value) return;
-
-    if (!puzzle) {
-        puzzleContainer.value?.switchPuzzle("none")
-        return;
+watch(() => props.fileId, () => {
+    console.log(`Opened game view to ${props.fileId}`)
+    if (props.fileId == "freeplay") {
+        gameModel.value = getFreeplayPuzzleState()
+        sortKeys.value = ["collection", "number"]
     }
-    puzzleContainer.value?.switchPuzzle(puzzle.genre, puzzle.seed, !gameModel.value?.freeplay)
+}, {immediate: true})
+
+watchEffect(() => {
+    console.log(`Switched to puzzle ${props.puzzle}`)
+    if (props.puzzle !== undefined) {
+        selectedPuzzle.value = gameModel.value?.puzzles.find(e => e.key == props.puzzle)
+    } else {
+        const emptyPuzzle = new PuzzleData("none")
+        selectedPuzzle.value = emptyPuzzle
+    }
 })
 
-watch(gameModel, () => {
-    selectedPuzzle.value = undefined;
-})
+watch(selectedPuzzle, updatePuzzle)
 
 onMounted(() => {
-    puzzleContainer.value?.switchPuzzle("none")
+    updatePuzzle()
 })
 </script>
 
@@ -161,7 +199,7 @@ onMounted(() => {
                             <button type="submit" class="btn btn-primary">Connect</button>
                         </form-->
                         <div class="puzzlelist list-group list-group-flush">
-                            <PuzzleListEntry v-for="puzzle in sortedPuzzles" :puzzle="puzzle" :selected-puzzle="selectedPuzzle" :game-model="gameModel" @click="selectedPuzzle = puzzle"/>
+                            <PuzzleListEntry v-for="puzzleEntry in sortedPuzzles" :puzzle="puzzleEntry" :selectedPuzzleKey="puzzle" :to="`/game/${fileId}/${puzzleEntry.key}`" :game-model="gameModel"/>
                         </div>
                     </div>
                 </div>

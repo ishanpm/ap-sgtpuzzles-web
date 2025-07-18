@@ -15,7 +15,6 @@ defineEmits<{
 
 async function refreshFiles() {
     let saves = await saveService.getFileList()
-    saves.unshift(freeplayState.value)
 
     files.value = saves
 }
@@ -25,7 +24,7 @@ function getFreeplayPuzzleState() {
 
     let puzzles = genres.map(g => {
         let puzzle = new PuzzleData(g)
-        puzzle.index = index++
+        puzzle.key = "" + (index++)
         return puzzle
     })
 
@@ -53,19 +52,27 @@ onMounted(refreshFiles)
         </div>
         <div class="row">
             <div class="col-12 align-center vstack">
-                <div v-for="file of files" class="card focus-ring mb-2" :class="{'bg-primary': file.freeplay}" tabindex="0" @click="$emit('fileClick', file)">
+                <RouterLink class="game-card card focus-ring mb-2 bg-primary" tabindex="0" :to="`/game/freeplay`">
+                    <div class="card-body d-flex flex-row" role="button">
+                        <div>
+                            <h4>Freeplay</h4>
+                        </div>
+                        <div class="flex-fill"></div>
+                    </div>
+                </RouterLink>
+                <RouterLink v-for="(file, index) of files" class="game-card card focus-ring mb-2" tabindex="0" :to="`/game/${file.filename}`">
                     <div class="card-body d-flex flex-row" role="button">
                         <div>
                             <h4>{{ file.filename }}</h4>
                             <small v-if="!file.freeplay">{{ file.host }}:{{ file.port }}</small>
                         </div>
                         <div class="flex-fill"></div>
-                        <div class="hstack gap-1" v-if="!file.freeplay">
-                            <a class="btn btn-primary" href="#" @click.stop="$emit('fileClick', file)">Open</a>
+                        <div class="hstack gap-1">
+                            <RouterLink class="btn btn-primary" :to="`/game/${index}`">Open</RouterLink>
                             <a class="btn btn-secondary" href="#" @click.stop="console.log('wow')">Edit</a>
                         </div>
                     </div>
-                </div>
+                </RouterLink>
                 <button class="btn btn-primary btn-lg align-self-center mt-4">
                     <i class="bi bi-plus-lg" role="img"></i>
                     Connect
@@ -76,4 +83,7 @@ onMounted(refreshFiles)
 </template>
 
 <style lang="scss">
+a.game-card {
+    text-decoration: initial;
+}
 </style>

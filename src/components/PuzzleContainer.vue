@@ -113,7 +113,7 @@ onMounted(() => {
         <h2 v-if="puzzleState">{{ genreInfo[puzzleState.genre].name }}</h2>
         <div :class="{hidden: !puzzleState?.params}">
             Parameters: <a
-                    href="#"
+                    href="javascript:void(0)"
                     ref="paramsLink"
                     @click="copyParams()"
                     class="icon-link"

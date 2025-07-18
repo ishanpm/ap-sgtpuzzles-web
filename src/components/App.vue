@@ -5,6 +5,7 @@ import { inject, onMounted, ref, shallowRef } from 'vue';
 import { SaveService, saveServiceKey } from '@/services/SaveService';
 import { type Component } from 'vue';
 import HomeScreen from './HomeScreen.vue'
+import { RouterLink, RouterView } from 'vue-router';
 
 const currentView = ref("home")
 const gameModel = ref<GameModel>()
@@ -21,11 +22,10 @@ function loadFile(file: GameModel) {
     <div class="min-vh-100 d-flex flex-column">
         <nav class="navbar sticky-top navbar-expand-lg bg-body-tertiary">
             <div class="container-fluid">
-                <a class="navbar-brand" href="#" @click="currentView='home'">AP Puzzles</a>
+                <RouterLink class="navbar-brand" to="/">AP Puzzles</RouterLink>
             </div>
         </nav>
-        <HomeScreen v-if="currentView=='home'" @file-click="loadFile"/>
-        <Game v-if="currentView=='game'" v-model="gameModel"/>
+        <RouterView/>
         <div class="flex-fill"></div>
         <div class="footer bg-body-tertiary mt-5">
         </div>
