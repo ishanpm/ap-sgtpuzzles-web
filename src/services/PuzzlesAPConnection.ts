@@ -24,7 +24,7 @@ export class PuzzlesAPConnection {
 
         this.client.socket.on("connected", this.onConnected.bind(this))
         this.client.socket.on("sentPackets", (packets =>console.log(packets)))
-        this.client.socket.on("disconnected", () => console.log("Disconnect"))
+        this.client.socket.on("disconnected", this.onDisconnected.bind(this))
         this.client.socket.on("receivedPacket", this.logEvent.bind(this));
         this.client.socket.on("receivedItems", this.onReceivedItems.bind(this));
         this.client.socket.on("roomUpdate", this.syncAPStatus.bind(this));
@@ -59,8 +59,6 @@ export class PuzzlesAPConnection {
         })
 
         this.onRemoteSolvedChange(stores[solvesKey])
-
-        this.connected.value = true;
 
         return this.model
     }
@@ -126,6 +124,8 @@ export class PuzzlesAPConnection {
 
             this.watchers.push(watcher)
         }
+
+        this.connected.value = true;
     }
 
     onDisconnected() {
@@ -137,8 +137,8 @@ export class PuzzlesAPConnection {
             return;
         }
 
-        if (!puzzle.index) {
-            console.warn("Tried to send check for puzzle with no index")
+        if (!puzzle.key) {
+            console.warn("Tried to send check for puzzle with no key")
             return;
         }
 
@@ -146,16 +146,16 @@ export class PuzzlesAPConnection {
 
         let toCheck: number[] = []
 
-        toCheck.push(gamePackage.locationTable[`Puzzle ${puzzle.index} Reward`])
+        toCheck.push(gamePackage.locationTable[`Puzzle ${puzzle.key} Reward`])
 
         for (let i = 1; i < 3; i++) {
-            toCheck.push(gamePackage.locationTable[`Puzzle ${puzzle.index} Reward ${i}`])
+            toCheck.push(gamePackage.locationTable[`Puzzle ${puzzle.key} Reward ${i}`])
         }
 
         this.client.check(...toCheck)
 
         this.client.storage.prepare(`sgtpuzzles_solves_${this.client.players.self.slot}`, {})
-            .update({[puzzle.index]: true})
+            .update({[puzzle.key]: true})
             .commit()
     }
 
