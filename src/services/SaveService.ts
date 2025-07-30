@@ -68,9 +68,30 @@ export class SaveService {
 
         let fileList = await asPromise<GameSave[]>(gamesave.getAll());
 
-        let gameModels = fileList.map(this._inflateGameModel);
+        let gameModels: {[id: number]: GameModel} = {}
+        
+        for (let file of fileList) {
+            gameModels[file.id] = this._inflateGameModel(file)
+        }
 
         return gameModels;
+    }
+
+    async getFile(id: number) {
+        let db = await this.db;
+
+        let transaction = db.transaction("gamesave");
+        let gamesave = transaction.objectStore("gamesave");
+
+        let file = await asPromise<GameSave | undefined>(gamesave.get(id))
+
+        if (!file) {
+            return undefined
+        }
+
+        let gameModel = this._inflateGameModel(file)
+
+        return gameModel;
     }
 
     async deleteFile(id: number) {
@@ -167,7 +188,7 @@ export class SaveService {
 
     _inflatePuzzleData(save: PuzzleDataSave): PuzzleData {
         let ret = new PuzzleData(save.genre)
-        ret.index = save.index
+        ret.key = save.key ?? (""+save.index)
         ret.locked = save.locked
         ret.localSolved = save.localSolved
         ret.solved = save.solved
@@ -183,7 +204,7 @@ export class SaveService {
     _deflatePuzzleData(puzzle: PuzzleData): PuzzleDataSave {
         return {
             genre: puzzle.genre,
-            index: puzzle.index ?? 0,
+            key: puzzle.key ?? "",
             items: puzzle.items?.map(this._deflatePuzzleLocation) ?? [],
             localSolved: puzzle.localSolved,
             solved: puzzle.solved,

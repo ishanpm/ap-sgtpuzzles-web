@@ -8,6 +8,7 @@ import { PuzzleData } from "@/types/PuzzleData";
 import { PuzzleState } from "@/types/PuzzleState";
 import PuzzleListEntry from "./PuzzleListEntry.vue";
 import { useRoute } from "vue-router";
+import { GameService, gameServiceKey } from "@/services/GameService";
 
 const gameModel = defineModel<GameModel>()
 const props = defineProps<{
@@ -28,6 +29,7 @@ const connectionPlayer = ref("Player1")
 const errorText = ref("")
 
 const apConnection = inject(puzzlesAPConnectionKey) as PuzzlesAPConnection
+const gameService = inject(gameServiceKey) as GameService
 
 const selectedPuzzle = ref<PuzzleData>()
 
@@ -65,12 +67,22 @@ const sortedPuzzles = computed(() => {
                 break;
 
             case "number":
-                if (a.key === undefined || b.key === undefined) {
-                    if (a.key !== undefined && b.key === undefined) return -1
-                    if (a.key === undefined && b.key !== undefined) return 1
+                var key1: any = a.key
+                var key2: any = b.key
+
+                if (key1 !== undefined && !isNaN(+key1)) {
+                    key1 = +key1
+                }
+                if (key2 !== undefined && !isNaN(+key2)) {
+                    key2 = +key2
+                }
+
+                if (key1 === undefined || key2 === undefined) {
+                    if (key1 !== undefined && key2 === undefined) return -1
+                    if (key1 === undefined && key2 !== undefined) return 1
                 } else {
-                    if (a.key < b.key) return -1
-                    if (a.key > b.key) return 1
+                    if (key1 < key2) return -1
+                    if (key1 > key2) return 1
                 }
                 break;
 
@@ -109,23 +121,6 @@ function updatePuzzle() {
     puzzleContainer.value?.switchPuzzle(newPuzzle.genre, newPuzzle.seed, !gameModel.value?.freeplay)
 }
 
-function getFreeplayPuzzleState() {
-    let index = 1
-
-    let puzzles = genres.map(g => {
-        let puzzle = new PuzzleData(g)
-        puzzle.key = g
-        return puzzle
-    })
-
-    let gameModel = new GameModel()
-    gameModel.freeplay = true
-    gameModel.filename = "Freeplay"
-    gameModel.puzzles = puzzles
-
-    return gameModel
-}
-
 async function connect() {
     try {
         gameModel.value = (await apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)).value
@@ -152,10 +147,16 @@ function onPuzzleSolved() {
     puzzle.localSolved = true
 }
 
-watch(() => props.fileId, () => {
+watch(() => props.fileId, async () => {
     console.log(`Opened game view to ${props.fileId}`)
-    if (props.fileId == "freeplay") {
-        gameModel.value = getFreeplayPuzzleState()
+    gameModel.value = await gameService.loadGame(props.fileId)
+
+    if (!gameModel.value) {
+        console.warn(`Failed to load game ${props.fileId}`)
+        //TODO inform user
+    }
+
+    if (gameModel.value && gameModel.value.freeplay) {
         sortKeys.value = ["collection", "number"]
     }
 }, {immediate: true})
@@ -164,6 +165,11 @@ watchEffect(() => {
     console.log(`Switched to puzzle ${props.puzzle}`)
     if (props.puzzle !== undefined) {
         selectedPuzzle.value = gameModel.value?.puzzles.find(e => e.key == props.puzzle)
+
+        //TODO handle locked puzzles reactively
+        if (selectedPuzzle.value?.locked) {
+            selectedPuzzle.value = new PuzzleData("none")
+        }
     } else {
         const emptyPuzzle = new PuzzleData("none")
         selectedPuzzle.value = emptyPuzzle

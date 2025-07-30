@@ -67,6 +67,7 @@ export class PuzzlesAPConnection {
         for (let watcher of this.watchers) {
             watcher.stop()
         }
+        this.watchers = []
     }
 
     getGamePackage() {

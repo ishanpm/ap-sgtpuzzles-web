@@ -25,7 +25,9 @@ export interface PuzzleDataSave {
     localSolved: boolean,
     solved: boolean,
     skipped: boolean,
-    index: number,
+    /** @deprecated */
+    index?: number,
+    key?: string,
     params?: string,
     id?: string,
     seed?: string,

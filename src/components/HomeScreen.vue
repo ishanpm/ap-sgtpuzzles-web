@@ -5,7 +5,7 @@ import { GameModel } from '@/types/GameModel';
 import { PuzzleData } from '@/types/PuzzleData';
 import { inject, onMounted, ref } from 'vue';
 
-const files = ref<GameModel[]>([])
+const files = ref<{[id: number]: GameModel}>([])
 const saveService = inject(saveServiceKey) as SaveService
 const freeplayState = ref(getFreeplayPuzzleState())
 
@@ -60,7 +60,7 @@ onMounted(refreshFiles)
                         <div class="flex-fill"></div>
                     </div>
                 </RouterLink>
-                <RouterLink v-for="(file, index) of files" class="game-card card focus-ring mb-2" tabindex="0" :to="`/game/${file.filename}`">
+                <RouterLink v-for="(file, id) of files" class="game-card card focus-ring mb-2" tabindex="0" :to="`/game/${id}`">
                     <div class="card-body d-flex flex-row" role="button">
                         <div>
                             <h4>{{ file.filename }}</h4>
@@ -68,7 +68,7 @@ onMounted(refreshFiles)
                         </div>
                         <div class="flex-fill"></div>
                         <div class="hstack gap-1">
-                            <RouterLink class="btn btn-primary" :to="`/game/${index}`">Open</RouterLink>
+                            <RouterLink class="btn btn-primary" :to="`/game/${id}`">Open</RouterLink>
                             <a class="btn btn-secondary" href="#" @click.stop="console.log('wow')">Edit</a>
                         </div>
                     </div>
