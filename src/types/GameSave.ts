@@ -1,7 +1,7 @@
 import type { GenreKey } from "@/genres"
 
 export interface GameSave {
-    id: number,
+    id?: number,
     filename?: string,
     host?: string,
     port?: number,

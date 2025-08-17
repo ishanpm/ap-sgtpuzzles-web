@@ -12,6 +12,7 @@ function asPromise<T>(transaction: IDBRequest<T>): Promise<T> {
     return new Promise(function (resolve, reject) {
         transaction.onsuccess = (_ => resolve(transaction.result));
         transaction.onerror = (_ => reject(transaction.error));
+        //if (transaction.readyState == "done") resolve(transaction.result)
     })
 }
 
@@ -71,6 +72,7 @@ export class SaveService {
         let gameModels: {[id: number]: GameModel} = {}
         
         for (let file of fileList) {
+            if (file.id === undefined) continue
             gameModels[file.id] = this._inflateGameModel(file)
         }
 
@@ -94,16 +96,43 @@ export class SaveService {
         return gameModel;
     }
 
-    async deleteFile(id: number) {
+    async saveFile(gameModel: GameModel): Promise<number> {
         let db = await this.db;
 
-        if (id == -1) return;
+        let transaction = db.transaction("gamesave", "readwrite");
+        let gamesave = transaction.objectStore("gamesave");
+
+        let file = this._deflateGameModel(gameModel)
+
+        // Delete file.id if not specified to auto-increment
+        if (file.id === undefined) {
+            delete file.id;
+        }
+
+        let id = await asPromise<IDBValidKey>(gamesave.put(file))
+
+        if (typeof(id) != "number") {
+            throw new TypeError("Expected the file key to be a number")
+        }
+
+        // Fill in id for new files
+        if (gameModel.fileId === undefined) {
+            gameModel.fileId = id
+        }
+
+        return id;
+    }
+
+    async deleteFile(id: number) {
+        let db = await this.db;
 
         const transaction = db.transaction(["gamesave","puzzlesave"], "readwrite");
         const gamesave = transaction.objectStore("gamesave");
         const puzzlesave = transaction.objectStore("puzzlesave");
 
         let toAwait: Promise<void>[] = [];
+
+        toAwait.push(asPromise(gamesave.delete(+id)));
 
         const puzzlesByGameId = puzzlesave.index("gameId")
 
@@ -113,11 +142,9 @@ export class SaveService {
             toAwait.push(asPromise(cursor.delete()));
         }
 
-        toAwait.push(asPromise(gamesave.delete(id)));
+        await Promise.allSettled(toAwait)
 
         transaction.commit();
-
-        await Promise.allSettled(toAwait)
     }
 
     async savePuzzleData(file: number, index: number, data: string) {
@@ -149,15 +176,18 @@ export class SaveService {
     _inflateGameModel(save: GameSave): GameModel {
         let ret = new GameModel()
         ret.freeplay = false
+        ret.finished = save.finished
+        ret.solveTarget = save.solveTarget
         ret.host = save.host
         ret.port = save.port
         ret.password = save.password
         ret.player = save.player
         ret.filename = save.filename ?? save.player
+        ret.fileId = save.id
         ret.seed = save.baseSeed ?? ""
 
         if (save.puzzleData) {
-            ret.puzzles = save.puzzleData.map(this._inflatePuzzleData)
+            ret.puzzles = save.puzzleData.map(this._inflatePuzzleData.bind(this))
         } else if (save.puzzles && save.puzzleLocked && save.puzzleSolved && save.baseSeed) {
             // Load old version save files
             for (let i = 0; i < save.puzzleSolved.length; i++) {
@@ -173,16 +203,16 @@ export class SaveService {
 
     _deflateGameModel(game: GameModel): GameSave {
         return {
-            finished: false, //TODO
-            id: 9999999, //TODO
-            puzzleData: game.puzzles.map(this._deflatePuzzleData),
-            solveTarget: game.puzzles.length, //TODO
+            finished: game.finished,
+            id: game.fileId,
+            puzzleData: game.puzzles.map(this._deflatePuzzleData.bind(this)),
+            solveTarget: game.solveTarget ?? game.puzzles.length,
             baseSeed: game.seed,
             filename: game.filename,
-            host: "", //TODO
-            player: "", //TODO
-            password: "", //TODO
-            port: 0 //TODO
+            host: game.host,
+            player: game.player,
+            password: game.password,
+            port: game.port
         }
     }
 
@@ -196,7 +226,7 @@ export class SaveService {
         ret.params = save.params
         ret.id = save.id
         ret.seed = save.seed
-        ret.items = save.items.map(this._inflatePuzzleLocation)
+        ret.items = save.items.map(this._inflatePuzzleLocation.bind(this))
 
         return ret
     }
@@ -205,7 +235,7 @@ export class SaveService {
         return {
             genre: puzzle.genre,
             key: puzzle.key ?? "",
-            items: puzzle.items?.map(this._deflatePuzzleLocation) ?? [],
+            items: puzzle.items?.map(this._deflatePuzzleLocation.bind(this)) ?? [],
             localSolved: puzzle.localSolved,
             solved: puzzle.solved,
             locked: puzzle.locked,

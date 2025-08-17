@@ -3,10 +3,14 @@ import { PuzzleData } from "./PuzzleData"
 
 export class GameModel {
     filename?: string = ""
+    fileId?: number
     host?: string
     port?: number
     player?: string
     password?: string
+
+    solveTarget?: number
+    finished: boolean = false
 
     puzzles: PuzzleData[] = []
     seed: string = ""

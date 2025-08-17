@@ -18,22 +18,46 @@ export class GameService {
         this.gameModel = ref<GameModel>(new GameModel());
     }
 
-    async loadGame(id: string): Promise<GameModel | undefined> {
+    async newGame(host: string, port: number, player: string, password: string | undefined): Promise<GameModel> {
+        let model = await this.apConnection.connectAP(host, port, player, password)
+
+        return model;
+    }
+
+    async loadGame(id: string): Promise<GameConnectionResult> {
         if (id == "freeplay") {
             this._initFreeplayGame();
-            return this.gameModel.value;
+            return {gameModel: this.gameModel};
         } else if (!isNaN(+id)) {
             let saveNum = +id;
-            let result = await this.saveService.getFile(saveNum)
-            if (result) {
-                this.gameModel.value = result
-                return result
+            let save = await this.saveService.getFile(saveNum)
+            let error: any = undefined
+            
+            if (save) {
+                this.gameModel.value = save
+
+                if (save.host && save.port && save.player) {
+                    try {
+                        // Skip connecting if already connected
+                        if (this.apConnection.model.value.fileId != save.fileId) {
+                            console.log("Connecting to AP...")
+                            let remoteSlotData = await this.apConnection.connectAP(save.host, save.port, save.player, save.password)
+                            // TODO compare remote and local slot data
+                        }
+                        this.apConnection.setModel(this.gameModel.value)
+                    } catch (e) {
+                        console.error(e)
+                        error = e
+                    }
+                }
+
+                return {gameModel: this.gameModel, error}
             } else {
-                return undefined
+                return {error: "Couldn't load save file"}
             }
         }
 
-        return undefined;
+        return {error: "Invalid file ID"};
     }
 
     markPuzzleSolved(key: string) {
@@ -54,4 +78,9 @@ export class GameService {
 
         this.gameModel.value = gameModel
     }
+}
+
+export interface GameConnectionResult {
+    gameModel?: Ref<GameModel>
+    error?: any
 }

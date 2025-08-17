@@ -1,5 +1,5 @@
 import { GameModel } from "@/types/GameModel";
-import { type ConnectionOptions, Client, type ConnectedPacket, type ReceivedItemsPacket, type RetrievedPacket, type RoomUpdatePacket, type ServerPacket, type SetReplyPacket, PackageMetadata, type MessageNode, type InvalidPacketPacket } from "archipelago.js"
+import { type ConnectionOptions, Client, type ConnectedPacket, type ReceivedItemsPacket, type RetrievedPacket, type RoomUpdatePacket, type ServerPacket, type SetReplyPacket, PackageMetadata, type MessageNode, type InvalidPacketPacket, type JSONRecord, type JSONSerializable } from "archipelago.js"
 import { reactive, ref, toHandlers, watch, type InjectionKey, type Ref, type WatchHandle } from "vue";
 import { PuzzleState } from "../types/PuzzleState";
 import { PuzzleData, puzzleFromArchipelagoString } from "@/types/PuzzleData";
@@ -16,6 +16,7 @@ export class PuzzlesAPConnection {
     model: Ref<GameModel>
     gamePackage: PackageMetadata | undefined
     watchers: WatchHandle[] = []
+    slotData: JSONRecord | undefined
 
     constructor() {
         this.client = new Client();
@@ -34,13 +35,12 @@ export class PuzzlesAPConnection {
         this.client.messages.on("message", this.onMessage.bind(this))
     }
 
-    async connectAP(hostname: string, port: number, player: string, password?: string) {
+    async connectAP(hostname: string, port: number, player: string, password?: string): Promise<GameModel> {
         this.client.socket.disconnect()
         this.connected.value = false
 
         this.clearWatchers()
-
-        console.log("connecting to AP...");
+        this.model.value = new GameModel()
 
         let connectionInfo: ConnectionOptions = {
             password: password ?? ""
@@ -52,6 +52,33 @@ export class PuzzlesAPConnection {
 
         console.log("connected to AP");
 
+        this.model.value.host = hostname
+        this.model.value.port = port
+        this.model.value.player = player
+        this.model.value.password = password
+
+        this.connected.value = true
+
+        return this.model.value
+    }
+
+    async setModel(newModel: GameModel) {
+        this.clearWatchers()
+
+        // Transfer data to new model
+        let oldModel = this.model.value
+        if (oldModel) {
+            for (let i = 0; i < oldModel.puzzles.length; i++) {
+                let oldPuzzle = oldModel.puzzles[i]
+                let newPuzzle = newModel.puzzles[i]
+
+                if (oldPuzzle.solved) newPuzzle.solved = true
+                if (!oldPuzzle.locked) newPuzzle.locked = false
+            }
+        }
+
+        this.model.value = newModel
+
         let solvesKey = `sgtpuzzles_solves_${this.client.players.self.slot}`
 
         let stores = await this.client.storage.notify([solvesKey], (key, value, oldValue) => {
@@ -60,7 +87,15 @@ export class PuzzlesAPConnection {
 
         this.onRemoteSolvedChange(stores[solvesKey])
 
-        return this.model
+        for (let i = 0; i < newModel.puzzles.length; i++) {
+            let watcher = watch(() =>  newModel.puzzles[i].localSolved, (localSolved) => {
+                if (localSolved) {
+                    this.onPuzzleSolved(newModel.puzzles[i])
+                }
+            })
+
+            this.watchers.push(watcher)
+        }
     }
 
     clearWatchers() {
@@ -81,14 +116,18 @@ export class PuzzlesAPConnection {
         return this.gamePackage
     }
 
+    onConnected(packet: ConnectedPacket) {
+        let newModel = this.parseGameData(packet.slot_data)
+        this.setModel(newModel)
+    }
+
     logEvent(packet: ServerPacket) {
         console.log(packet.cmd, packet)
     }
 
-    onConnected(packet: ConnectedPacket) {
+    parseGameData(slotData: JSONSerializable): GameModel {
         // Load puzzle data
         const gamePackage = this.getGamePackage()
-        const slotData = packet.slot_data
         
         if (!isAPSlotData(slotData)) {
             console.log("Slot data failed to type match:", slotData)
@@ -96,7 +135,8 @@ export class PuzzlesAPConnection {
             
         }
 
-        this.model.value = new GameModel()
+        let newModel = new GameModel()
+        newModel.seed = ""+slotData.world_seed
 
         let newPuzzles: PuzzleData[] = []
 
@@ -114,19 +154,9 @@ export class PuzzlesAPConnection {
             newPuzzles.push(newPuzzle)
         }
 
-        this.model.value.puzzles = newPuzzles;
+        newModel.puzzles = newPuzzles;
 
-        for (let i = 0; i < puzzles.length; i++) {
-            let watcher = watch(() => this.model.value.puzzles[i].localSolved, (localSolved) => {
-                if (localSolved) {
-                    this.onPuzzleSolved(this.model.value.puzzles[i])
-                }
-            })
-
-            this.watchers.push(watcher)
-        }
-
-        this.connected.value = true;
+        return newModel
     }
 
     onDisconnected() {

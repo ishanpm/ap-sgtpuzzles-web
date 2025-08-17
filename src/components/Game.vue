@@ -9,6 +9,7 @@ import { PuzzleState } from "@/types/PuzzleState";
 import PuzzleListEntry from "./PuzzleListEntry.vue";
 import { useRoute } from "vue-router";
 import { GameService, gameServiceKey } from "@/services/GameService";
+import { Toast } from "bootstrap";
 
 const gameModel = defineModel<GameModel>()
 const props = defineProps<{
@@ -19,6 +20,8 @@ const props = defineProps<{
 const route = useRoute()
 
 const puzzleContainer = useTemplateRef("puzzleContainer")
+const errorToastElem = useTemplateRef("errorToastElem")
+const errorToast = shallowRef<Toast>()
 
 const id = useId();
 
@@ -122,18 +125,26 @@ function updatePuzzle() {
 }
 
 async function connect() {
-    try {
-        gameModel.value = (await apConnection.connectAP(connectionHost.value, +connectionPort.value, connectionPlayer.value)).value
-    } catch (e) {
-        console.error(e)
-        apErrorCallback(e)
+    let connectionResult = await gameService.loadGame(props.fileId)
+
+    if (connectionResult.error) {
+        apErrorCallback(connectionResult.error)
     }
-    
-    Object.assign(window, {apConnection: apConnection})
+
+    gameModel.value = connectionResult.gameModel?.value
+
+    if (!gameModel.value) {
+        console.warn(`Failed to load game ${props.fileId}`)
+    }
+
+    if (gameModel.value && gameModel.value.freeplay) {
+        sortKeys.value = ["collection", "number"]
+    }
 }
 
 function apErrorCallback(message: any) {
     errorText.value = message.toString()
+    errorToast.value?.show()
 }
 
 function onPuzzleSolved() {
@@ -149,37 +160,34 @@ function onPuzzleSolved() {
 
 watch(() => props.fileId, async () => {
     console.log(`Opened game view to ${props.fileId}`)
-    gameModel.value = await gameService.loadGame(props.fileId)
-
-    if (!gameModel.value) {
-        console.warn(`Failed to load game ${props.fileId}`)
-        //TODO inform user
-    }
-
-    if (gameModel.value && gameModel.value.freeplay) {
-        sortKeys.value = ["collection", "number"]
-    }
+    connect()
 }, {immediate: true})
 
 watchEffect(() => {
     console.log(`Switched to puzzle ${props.puzzle}`)
     if (props.puzzle !== undefined) {
-        selectedPuzzle.value = gameModel.value?.puzzles.find(e => e.key == props.puzzle)
+        var newPuzzle = gameModel.value?.puzzles.find(e => e.key == props.puzzle)
 
         //TODO handle locked puzzles reactively
-        if (selectedPuzzle.value?.locked) {
+        if (newPuzzle && !newPuzzle.locked) {
+            selectedPuzzle.value = newPuzzle
+        } else {
             selectedPuzzle.value = new PuzzleData("none")
         }
     } else {
-        const emptyPuzzle = new PuzzleData("none")
-        selectedPuzzle.value = emptyPuzzle
+        selectedPuzzle.value = new PuzzleData("none")
     }
 })
 
 watch(selectedPuzzle, updatePuzzle)
 
 onMounted(() => {
+    if (!errorToastElem.value) {
+        throw new Error("Error toast not initialized")
+    }
+
     updatePuzzle()
+    errorToast.value = new Toast(errorToastElem.value)
 })
 </script>
 
@@ -219,7 +227,7 @@ onMounted(() => {
     <Teleport to="#toast-container">
         <div ref="errorToastElem" data-bs-autohide="false" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
             <div class="toast-header">
-                <strong class="me-auto">Connection Error</strong>
+                <strong class="me-auto">Error</strong>
                 <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
             <div class="toast-body">
