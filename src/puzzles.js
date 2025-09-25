@@ -672,6 +672,10 @@ function savePuzzleData() {
     sendMessage("savePuzzleData")
 }
 
+function setNewGameEnabled(allowNewGame) {
+    sendMessage("setNewGameEnabled", allowNewGame)
+}
+
 async function loadPuzzleData() {
     const gamesaves = Alpine.store("gamesaves");
     const puzzleList = Alpine.store("puzzleList");
