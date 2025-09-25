@@ -140,6 +140,7 @@ window.onmessage = processMessage
 //
 
 function sendMessage(command, ...args) {
+    // Kludge to listen for post-init
     if (command == "js_post_init") {
         if (!allowNewGame) {
             setNewGameEnabled(false)
