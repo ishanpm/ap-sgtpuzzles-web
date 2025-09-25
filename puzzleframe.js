@@ -1,7 +1,7 @@
 var solved = false;
 var genre = "";
 var puzzleId = "";
-var disableNewGame = false;
+var allowNewGame = true;
 
 window.onload = function() {
     let queryFragment = new URLSearchParams(window.location.search);
@@ -13,7 +13,7 @@ window.onload = function() {
     }
 
     if (queryFragment.has("s")) {
-        disableNewGame = true;
+        allowNewGame = false;
     }
 
     if (genre) {
@@ -60,7 +60,7 @@ function setPreset(id) {
 }
 
 function setNewGameEnabled(allow) {
-    disableNewGame = !allow;
+    set_allowed_shortcuts(allow, allow, true)
 }
 
 function dialogReturnString(index, val) {
@@ -140,6 +140,12 @@ window.onmessage = processMessage
 //
 
 function sendMessage(command, ...args) {
+    if (command == "js_post_init") {
+        if (!allowNewGame) {
+            setNewGameEnabled(false)
+        }
+    }
+
     window.parent.postMessage([command, ...args], "*")
 }
 

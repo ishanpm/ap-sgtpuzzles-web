@@ -173,6 +173,11 @@ var savefile_read_callback;
 // Callback for passing in preferences data retrieved from localStorage.
 var prefs_load_callback;
 
+// void set_allowed_shortcuts(bool new_game_allowed, bool solve_game_allowed, bool undo_allowed);
+//
+// Callback for disabling keyboard shortcuts.
+var set_allowed_shortcuts;
+
 // The <ul> object implementing the game-type drop-down, and a list of
 // the sub-lists inside it. Used by js_add_preset().
 var gametypelist = document.getElementById("gametype");
@@ -503,9 +508,6 @@ function initPuzzle() {
     var key = Module.cwrap('key', 'boolean', ['number', 'string', 'string',
                                               'number', 'number', 'number']);
     onscreen_canvas.onkeydown = function(event) {
-        if (disableNewGame && (event.key == "n" || event.key == "N")) {
-            return;
-        }
         if (key(event.keyCode, event.key, event.char, event.location,
                 event.shiftKey ? 1 : 0, event.ctrlKey ? 1 : 0))
             event.preventDefault();
@@ -832,6 +834,8 @@ function initPuzzle() {
     timer_callback = Module.cwrap('timer_callback', 'void', ['number']);
     prefs_load_callback = Module.cwrap('prefs_load_callback', 'void',
                                        ['number','number']);
+    set_allowed_shortcuts = Module.cwrap('set_allowed_shortcuts', 'void',
+                                         ['boolean', 'boolean', 'boolean'])
 
     if (resizable_div !== null) {
         var resize_handle = document.getElementById("resizehandle");
@@ -3521,6 +3525,9 @@ var _load_game = Module["_load_game"] = createExportWrapper("load_game");
 
 /** @type {function(...*):?} */
 var _prefs_load_callback = Module["_prefs_load_callback"] = createExportWrapper("prefs_load_callback");
+
+/** @type {function(...*):?} */
+var _set_allowed_shortcuts = Module["_set_allowed_shortcuts"] = createExportWrapper("set_allowed_shortcuts");
 
 /** @type {function(...*):?} */
 var _main = Module["_main"] = createExportWrapper("main");
