@@ -31,8 +31,10 @@ const existingFile = ref(false)
 const working = ref(false)
 
 const fileDialogElem = useTemplateRef("fileDialogElem")
-const fileDialog = shallowRef<Modal | undefined>()
+const fileDialog = shallowRef<Modal>()
 const fileDialogForm = useTemplateRef("fileDialogForm")
+const deleteDialogElem = useTemplateRef("deleteDialogElem")
+const deleteDialog = shallowRef<Modal>()
 
 
 async function refreshFiles() {
@@ -72,7 +74,7 @@ function showNewFileDialog() {
     fileDialog.value?.show()
 }
 
-function editFile(file: GameModel, id: number) {
+function showEditFileDialog(file: GameModel, id: number) {
     selectedFile.value = file
     host.value = file.host ?? ""
     port.value = ""+(file.port ?? "")
@@ -85,6 +87,14 @@ function editFile(file: GameModel, id: number) {
     fileDialogError.value = ""
 
     fileDialog.value?.show()
+}
+
+function showDeleteFileDialog(file: GameModel, id: number) {
+    selectedFile.value = file
+    fileIndex.value = id
+
+    fileDialog.value?.hide()
+    deleteDialog.value?.show()
 }
 
 async function confirmCreateFile() {
@@ -151,12 +161,17 @@ async function deleteFile() {
     saveService.deleteFile(fileIndex.value)
 
     fileDialog.value?.hide()
+    deleteDialog.value?.hide()
 
     refreshFiles()
 }
 
 function cancelCreateFile() {
     fileDialog.value?.hide()
+}
+
+function cancelDeleteFile() {
+    deleteDialog.value?.hide()
 }
 
 watch(host, () => {
@@ -168,6 +183,7 @@ onMounted(() => {
         throw new Error("File modal not initialized")
     }
     fileDialog.value = new Modal(fileDialogElem.value)
+    deleteDialog.value = new Modal(deleteDialogElem.value)
     working.value = false
     refreshFiles()
 })
@@ -205,7 +221,7 @@ onMounted(() => {
                         </RouterLink>
                         <div class="hstack gap-1">
                             <RouterLink class="btn btn-primary" :to="`/game/${id}`">Open</RouterLink>
-                            <button class="btn btn-secondary" @click.stop="editFile(file, id)">Edit</button>
+                            <button class="btn btn-secondary" @click.stop="showEditFileDialog(file, id)">Edit</button>
                         </div>
                     </div>
                 </div>
@@ -221,10 +237,10 @@ onMounted(() => {
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h1 :id="`dialog-title-home`">
+                        <h2 :id="`dialog-title-home`">
                             <span v-if="!existingFile">New File</span>
                             <span v-if="existingFile">Edit File</span>
-                        </h1>
+                        </h2>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body">
@@ -264,7 +280,7 @@ onMounted(() => {
                         <button v-if="existingFile" class="btn btn-primary" :disabled="working" @click="updateFile()">
                             Save
                         </button>
-                        <button v-if="existingFile" class="btn btn-danger" :disabled="working" @click="deleteFile()">
+                        <button v-if="existingFile" class="btn btn-danger" :disabled="working" @click="showDeleteFileDialog(selectedFile, fileIndex)">
                             Delete
                         </button>
                         <button class="btn btn-secondary" :disabled="working" @click="cancelCreateFile()">Cancel</button>
@@ -281,12 +297,12 @@ onMounted(() => {
                     </div>
                     <div class="modal-body">
                         <p>
-                            Really delete file "`{{ selectedFile?.filename || "(unnamed)" }}`"?
+                            Really delete file "{{ selectedFile?.filename || "(unnamed)" }}"?
                         </p>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-danger" :disabled="working" @click="updateFile()">Delete</button>
-                        <button class="btn btn-secondary" :disabled="working" @click="cancelCreateFile()">Cancel</button>
+                        <button class="btn btn-danger" :disabled="working" @click="deleteFile()">Delete</button>
+                        <button class="btn btn-secondary" :disabled="working" @click="cancelDeleteFile()">Cancel</button>
                     </div>
                 </div>
             </div>
