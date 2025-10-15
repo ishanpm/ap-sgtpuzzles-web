@@ -24,6 +24,8 @@ let slotData;
  */
 let client;
 
+let remoteSolved = {};
+
 class ArchipelagoPuzzle {
     constructor(options) {
         // Puzzle genre
@@ -190,15 +192,21 @@ function initStores() {
                 loadPuzzle(entry.genre, "", false);
             }
         },
-        markSolved() {
-            if (this.current) {
-                this.current.onSolve();
+        markSolved(puzzle) {
+            puzzle ??= this.current
+
+            if (puzzle) {
+                puzzle.onSolve();
+
+                if (puzzle == this.current) {
+                    savePuzzleData();
+
+                }
 
                 const gamesaves = Alpine.store("gamesaves")
 
-                if (this.current.index && gamesaves.current) {
-                    savePuzzleData();
-                    gamesaves.current.puzzleSolved[this.current.index-1] = true;
+                if (puzzle.index && gamesaves.current) {
+                    gamesaves.current.puzzleSolved[puzzle.index-1] = true;
                     gamesaves.current.save();
                 }
 
@@ -373,6 +381,7 @@ function initStores() {
         current: null,
         apError: false,
         connecting: false,
+        connected: false,
         loadFile(file, secretMode) {
             loadFile(file, secretMode);
         },
@@ -707,6 +716,9 @@ function syncAPStatus() {
 
     let fileDirty = false;
 
+    let newRemoteSolves = {};
+    let anyNewRemoteSolves = false;
+
     for (let entry of puzzleList.entries) {
         let dirty = false;
         let itemId = itemNameToId(`Puzzle ${entry.index}`);
@@ -732,6 +744,19 @@ function syncAPStatus() {
         if (dirty) {
             entry.updateState();
         }
+
+        if (entry.solved && !(entry.index in remoteSolved)) {
+            newRemoteSolves[entry.index] = 1;
+            remoteSolved[entry.index] = 1;
+            anyNewRemoteSolves = true;
+        }
+    }
+
+    if (anyNewRemoteSolves) {
+        let slot = client.players.self.slot
+        client.storage.prepare(`sgtpuzzles/solves/${slot}`, {})
+            .update(newRemoteSolves)
+            .commit()
     }
 
     puzzleList.resort();
@@ -791,6 +816,7 @@ async function createFile(hostname, port, player, password) {
     gamesaves.connecting = false;
     gamesaves.list.push(newFile);
     gamesaves.current = newFile;
+    initRemoteSolves();
     syncAPStatus();
 }
 
@@ -878,6 +904,8 @@ async function loadFile(file, secretMode, newConnection) {
 
     if (connectOk) {
         apReady = true;
+        gamesaves.connected = true;
+        initRemoteSolves();
     }
 
     gamesaves.connecting = false;
@@ -929,16 +957,62 @@ function logEvent(event) {
     console.log(event);
 }
 
+/**
+ * @param {import("archipelago.js").SetReplyPacket} event 
+ */
+function onSetReply(event) {
+    let slot = client.players.self.slot
+    let key = `sgtpuzzles/solves/${slot}`
+
+    if (event.key == key) {
+        copyRemoteSolves(event.value)
+    }
+}
+
+/**
+ * @param {import("archipelago.js").RetrievedPacket} event 
+ */
+function onKeysRetreived(event) {
+    let slot = client.players.self.slot
+    let key = `sgtpuzzles/solves/${slot}`
+
+    console.log("KeysRetrieved", event)
+    
+    if (event.keys[key]) {
+        copyRemoteSolves(event.keys[key])
+    }
+}
+
+function copyRemoteSolves(solves) {
+    console.log(solves)
+    let puzzleList = Alpine.store("puzzleList")
+
+    let oldRemoteSolved = {};
+    Object.assign(oldRemoteSolved, remoteSolved)
+
+    for (let id in solves) {
+        if (!(id in oldRemoteSolved)) {
+            console.log(`adding remote solve ${id}`)
+            remoteSolved[id] = solves[id];
+            puzzleList.markSolved(puzzleList.entries[id-1]);
+        }
+    }
+}
+
 async function connectAP(hostname, port, player, password) {
     if (!client) {
         client = new Client();
         window.client = client;
+
+        // TODO probably unnecessary to sync both due to ReceivedItems and RoomUpdate..?
+        client.socket.on("receivedPacket", logEvent);
+        client.socket.on("receivedItems", onReceiveItems);
+        client.socket.on("roomUpdate", syncAPStatus);
+        client.socket.on("setReply", onSetReply)
+        client.socket.on("retrieved", onKeysRetreived)
     }
 
-    // TODO probably unnecessary to sync both due to ReceivedItems and RoomUpdate..?
-    client.socket.on("receivedItems", onReceiveItems);
-    client.socket.on("roomUpdate", syncAPStatus);
-    client.socket.on("receivedPacket", logEvent);
+    remoteSolved = {};
 
     console.log("connecting to AP...");
 
@@ -954,6 +1028,14 @@ async function connectAP(hostname, port, player, password) {
     console.log("connected to AP");
 
     syncAPStatus();
+}
+
+function initRemoteSolves() {
+    let slot = client.players.self.slot
+    let key = `sgtpuzzles/solves/${slot}`
+
+    client.socket.send({cmd:"SetNotify", keys:[key]})
+    client.socket.send({cmd:"Get", keys:[key]})
 }
 
 function itemIdToName(id) {
@@ -1017,8 +1099,10 @@ function loadFileData(file, secretMode) {
 }
 
 function disconnectAP() {
-    if (client) {
+    const gamesaves = Alpine.store("gamesaves")
+    if (client && client.socket.connected) {
         apReady = false;
+        gamesaves.connected = false;
         console.log("disconnecting from AP...");
         client.socket.disconnect();
     }
