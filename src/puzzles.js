@@ -781,7 +781,7 @@ function syncAPStatus() {
 
     if (anyNewRemoteSolves) {
         let slot = client.players.self.slot
-        client.storage.prepare(`sgtpuzzles/solves/${slot}`, {})
+        client.storage.prepare(`sgtpuzzles_solves_${slot}`, {})
             .update(newRemoteSolves)
             .commit()
     }
@@ -989,7 +989,7 @@ function logEvent(event) {
  */
 function onSetReply(event) {
     let slot = client.players.self.slot
-    let key = `sgtpuzzles/solves/${slot}`
+    let key = `sgtpuzzles_solves_${slot}`
 
     if (event.key == key) {
         copyRemoteSolves(event.value)
@@ -1001,7 +1001,7 @@ function onSetReply(event) {
  */
 function onKeysRetreived(event) {
     let slot = client.players.self.slot
-    let key = `sgtpuzzles/solves/${slot}`
+    let key = `sgtpuzzles_solves_${slot}`
 
     console.log("KeysRetrieved", event)
     
@@ -1059,7 +1059,7 @@ async function connectAP(hostname, port, player, password) {
 
 function initRemoteSolves() {
     let slot = client.players.self.slot
-    let key = `sgtpuzzles/solves/${slot}`
+    let key = `sgtpuzzles_solves_${slot}`
 
     client.socket.send({cmd:"SetNotify", keys:[key]})
     client.socket.send({cmd:"Get", keys:[key]})
