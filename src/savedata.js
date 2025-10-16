@@ -118,6 +118,17 @@ export class GameSave {
         return;
     }
 
+    async deletePuzzleSave(puzzleId) {
+        if (this.id == -1) return;
+
+        const transaction = db.transaction("puzzlesave", "readwrite");
+        const puzzlesave = transaction.objectStore("puzzlesave");
+
+        await asPromise(puzzlesave.delete([this.id, puzzleId]));
+
+        return;
+    }
+
     async deleteFile() {
         if (this.id == -1) return;
 

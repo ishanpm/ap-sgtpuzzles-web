@@ -198,9 +198,9 @@ function initStores() {
             this.currentIndex = entry.index;
             this.current = entry;
             if (entry.puzzleId) {
-                loadPuzzle(entry.genre, entry.puzzleId, true);
+                loadPuzzle(entry.genre, entry.puzzleId, true, entry.index);
             } else if (entry.puzzleSeed) {
-                loadPuzzle(entry.genre, entry.puzzleSeed, true);
+                loadPuzzle(entry.genre, entry.puzzleSeed, true, entry.index);
             } else {
                 loadPuzzle(entry.genre, "", false);
             }
@@ -430,7 +430,7 @@ function resetPuzzleMetadata() {
     Alpine.store("errorMessage").dismiss();
 }
 
-async function loadPuzzle(genre, id, singleMode) {
+async function loadPuzzle(genre, id, singleMode, saveKey) {
     let debugLoader = Alpine.store("debugLoader");
     let puzzleState = Alpine.store("puzzleState");
 
@@ -454,8 +454,8 @@ async function loadPuzzle(genre, id, singleMode) {
 
     let hasSave = false;
 
-    if (gamesaves.current && id) {
-        let saveData = await gamesaves.current.getPuzzleSave(id);
+    if (gamesaves.current && saveKey !== null && saveKey !== undefined) {
+        let saveData = await gamesaves.current.getPuzzleSave(saveKey);
         if (saveData) {
             hasSave = true;
         }
@@ -708,6 +708,20 @@ async function loadPuzzleData() {
     if (data) {
         sendMessage("loadPuzzleData", data);
     }
+}
+
+async function deletePuzzleData(index) {
+    const gamesaves = Alpine.store("gamesaves");
+    const puzzleList = Alpine.store("puzzleList");
+
+    if (gamesaves.current) {
+        index ??= puzzleList.current?.index
+    }
+    if (index === undefined) return;
+
+    await gamesaves.current.deletePuzzleSave(index);
+
+    return;
 }
 
 function hasItem(itemId) {
@@ -1132,6 +1146,7 @@ window.solvePuzzle = solvePuzzle;
 window.setPreset = setPreset;
 window.savePuzzleData = savePuzzleData;
 window.loadPuzzleData = loadPuzzleData;
+window.deletePuzzleData = deletePuzzleData;
 
 // Expose some variables to global scope for ease of debugging
 window.Alpine = Alpine;
