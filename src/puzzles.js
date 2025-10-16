@@ -89,18 +89,31 @@ class ArchipelagoPuzzle {
     }
 
     static fromArchipelagoString(genreAndParams, baseSeed, index, options) {
-        let seedPrefix = ""+index;
-        seedPrefix = seedPrefix.padStart(3, "0");
-        let seed = `${seedPrefix}${baseSeed}`;
-
-        let genreParamsMatch = /^([^:]*)(:(.*))?$/.exec(genreAndParams);
-
         options ??= {};
 
-        options.genre = genreParamsMatch[1];
-        options.params = genreParamsMatch[3] ?? "";
-        options.puzzleSeed = `${options.params}#${seed}`;
+        const archipelagoStringRegex = /^(?<genre>[^:\n]*)(:(?<params>[^:#\n]*)((?<separator>[:#])?(?<seedOrId>.*)))?$/
+        let genreParamsMatch = archipelagoStringRegex.exec(genreAndParams);
+
+        let genre = genreParamsMatch.groups.genre;
+        let params = genreParamsMatch.groups.params;
+        let separator = genreParamsMatch.groups.separator;
+        let seedOrId = genreParamsMatch.groups.seedOrId;
+
+        options.genre = genre;
+        options.params = params;
         options.index = index;
+
+        if (separator == ":") {
+            options.puzzleSeed = `${params}:${seedOrId}`;
+        } else if (separator == "#") {
+            options.puzzleId = `${params}#${seedOrId}`;
+        } else {
+            // Auto-generate seed
+            let seedPrefix = ""+index;
+            seedPrefix = seedPrefix.padStart(3, "0");
+            let seed = `${seedPrefix}${baseSeed}`;
+            options.puzzleSeed = `${params}#${seed}`;
+        }
 
         return new ArchipelagoPuzzle(options);
     }
