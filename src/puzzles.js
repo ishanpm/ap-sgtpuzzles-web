@@ -780,8 +780,9 @@ function syncAPStatus() {
     }
 
     if (anyNewRemoteSolves) {
+        let team = client.players.self.team
         let slot = client.players.self.slot
-        client.storage.prepare(`sgtpuzzles_solves_${slot}`, {})
+        client.storage.prepare(`sgtpuzzles_solves_${team}_${slot}`, {})
             .update(newRemoteSolves)
             .commit()
     }
@@ -988,8 +989,9 @@ function logEvent(event) {
  * @param {import("archipelago.js").SetReplyPacket} event 
  */
 function onSetReply(event) {
+    let team = client.players.self.team
     let slot = client.players.self.slot
-    let key = `sgtpuzzles_solves_${slot}`
+    client.storage.prepare(`sgtpuzzles_solves_${team}_${slot}`, {})
 
     if (event.key == key) {
         copyRemoteSolves(event.value)
@@ -1000,8 +1002,9 @@ function onSetReply(event) {
  * @param {import("archipelago.js").RetrievedPacket} event 
  */
 function onKeysRetreived(event) {
+    let team = client.players.self.team
     let slot = client.players.self.slot
-    let key = `sgtpuzzles_solves_${slot}`
+    client.storage.prepare(`sgtpuzzles_solves_${team}_${slot}`, {})
 
     console.log("KeysRetrieved", event)
     
@@ -1058,8 +1061,9 @@ async function connectAP(hostname, port, player, password) {
 }
 
 function initRemoteSolves() {
+    let team = client.players.self.team
     let slot = client.players.self.slot
-    let key = `sgtpuzzles_solves_${slot}`
+    client.storage.prepare(`sgtpuzzles_solves_${team}_${slot}`, {})
 
     client.socket.send({cmd:"SetNotify", keys:[key]})
     client.socket.send({cmd:"Get", keys:[key]})
