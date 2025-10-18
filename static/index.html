@@ -134,19 +134,13 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                     <br>
                     ID: <label x-data x-text="$store.puzzleState.gameId"></label>
                 </div>
-                <hr>
-                <span>
-                    <a href="https://github.com/ishanpm/ap-sgtpuzzles-web">ap-sgtpuzzles-web</a>
-                    <span x-data x-text="$store.config.version"></span>
-                    <span x-data x-text="($store.config.environment == 'production' ? '' : (' ' + $store.config.environment))"></span>
-                </span>
-
                 <template x-data="{puzzleId: ''}" x-if="false">
                     <form @submit.prevent="">
                         <input x-model="puzzleId">
                         <button type="submit">Load ID/Seed</button>
                     </form>
                 </template>
+                <hr>
                 <template x-data x-if="!$store.singleMode">
                     <ul role="menu">
                         <template x-for="preset in $store.puzzlePresets">
@@ -195,6 +189,12 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                         </div>
                     </div>
                 </template>
+                <hr>
+                <span class="version-info">
+                    <a href="https://github.com/ishanpm/ap-sgtpuzzles-web">ap-sgtpuzzles-web</a>
+                    <span x-data x-text="$store.config.version"></span>
+                    <span x-data x-text="($store.config.environment == 'production' ? '' : (' ' + $store.config.environment))"></span>
+                </span>
             </div>
 
             <div class="overscroll-spacer"></div>
