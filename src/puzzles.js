@@ -808,7 +808,7 @@ async function createFile(hostname, port, player, password) {
         console.error("Couldn't connect to Archipelago server");
         console.error(e);
 
-        //gamesaves.apError = true;
+        gamesaves.apError = true;
         gamesaves.connecting = false;
 
         return;
@@ -1127,9 +1127,9 @@ function loadFileData(file, secretMode) {
 
 function disconnectAP() {
     const gamesaves = Alpine.store("gamesaves")
+    apReady = false;
+    gamesaves.connected = false;
     if (client && client.socket.connected) {
-        apReady = false;
-        gamesaves.connected = false;
         console.log("disconnecting from AP...");
         client.socket.disconnect();
     }
