@@ -21,7 +21,7 @@
                 <ul class="file-list" x-data="$store.gamesaves">
                     <template x-for="file in list">
                         <li>
-                            <button class="file" :class="[file == current ? 'selected' : null, apError ? 'error' : null]"
+                            <button class="file" :class="[file == current ? 'selected' : null, (apError && file.id > -1) ? 'error' : null]"
                             @click="loadFile(file, $event.shiftKey)" :disabled="connecting">
                                 <span x-text="file.description"></span>
                             </button>
