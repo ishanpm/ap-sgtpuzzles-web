@@ -213,7 +213,6 @@ function initStores() {
 
                 if (puzzle == this.current) {
                     savePuzzleData();
-
                 }
 
                 const gamesaves = Alpine.store("gamesaves")
@@ -221,6 +220,7 @@ function initStores() {
                 if (puzzle.index && gamesaves.current) {
                     gamesaves.current.puzzleSolved[puzzle.index-1] = true;
                     gamesaves.current.save();
+                    syncAPStatus();
                 }
 
                 this.resort();
@@ -780,6 +780,7 @@ function syncAPStatus() {
     }
 
     if (anyNewRemoteSolves) {
+        console.log("newly solved: ", newRemoteSolves)
         let team = client.players.self.team
         let slot = client.players.self.slot
         let key = `sgtpuzzles_solves_${team}_${slot}`
