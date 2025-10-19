@@ -81,7 +81,7 @@ class ArchipelagoPuzzle {
         this.updateState();
 
         // TODO should probably extract this somewhere
-        if (apReady) {
+        if (isApReady()) {
             let locationId = locationNameToId(`Puzzle ${this.index} Reward`);
 
             client.check(locationId);
@@ -731,7 +731,7 @@ function hasItem(itemId) {
 function syncAPStatus() {
     const puzzleList = Alpine.store("puzzleList");
 
-    if (!apReady) {
+    if (!isApReady()) {
         puzzleList.resort();
         return;
     };
@@ -978,7 +978,7 @@ async function loadFileList() {
 }
 
 function onReceiveItems(event) {
-    if (apReady) {
+    if (isApReady()) {
         syncAPStatus();
     }
 }
@@ -1031,6 +1031,14 @@ function copyRemoteSolves(solves) {
     }
 }
 
+function onDisconnected() {
+    if (apReady) {
+        Alpine.store("gamesaves").apError = true
+    }
+    apReady = false;
+    console.log("disconnected")
+}
+
 async function connectAP(hostname, port, player, password) {
     if (!client) {
         client = new Client();
@@ -1042,6 +1050,7 @@ async function connectAP(hostname, port, player, password) {
         client.socket.on("roomUpdate", syncAPStatus);
         client.socket.on("setReply", onSetReply)
         client.socket.on("retrieved", onKeysRetreived)
+        client.socket.on("disconnected", onDisconnected);
     }
 
     remoteSolved = {};
@@ -1060,6 +1069,10 @@ async function connectAP(hostname, port, player, password) {
     console.log("connected to AP");
 
     syncAPStatus();
+}
+
+function isApReady() {
+    return apReady && client.authenticated;
 }
 
 function initRemoteSolves() {
