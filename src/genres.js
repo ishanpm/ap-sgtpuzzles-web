@@ -126,7 +126,7 @@ export const genreInfo = {
         description: "Guess the hidden color pattern.",
         rules: [
             "Black circles indicate how many pegs are correct.",
-            "white circles indicate how many pegs are the right color, but in the wrong location."
+            "White circles indicate how many pegs are the right color, but in the wrong location."
         ]
     },
     "inertia": {
@@ -149,7 +149,7 @@ export const genreInfo = {
     },
     "loopy": {
         name: "Loopy",
-        description: "Draw a loop that touches each clue the right number of times."
+        description: "Draw a loop that touches each clue the indicated number of times."
     },
     "magnets": {
         name: "Magnets",
@@ -165,7 +165,7 @@ export const genreInfo = {
     },
     "mosaic": {
         name: "Mosaic",
-        description: "Shade some cells so that each clue is near the right number of shaded cells."
+        description: "Shade some cells so that each clue is near the indicated number of shaded cells."
     },
     "net": {
         name: "Net",
@@ -238,7 +238,7 @@ export const genreInfo = {
         name: "Solo",
         description: "Fill in numbers so there are no duplicates in a row, column, or block.",
         rules: [
-            "Each row, column, and block contains the numbers from 1 to the grid size exactly once.",
+            "Each row, column, and thick-bordered region contains the numbers from 1 to the grid size exactly once.",
             "If the diagonals are shaded, numbers must not repeat along a diagonal. (X Sudoku)",
             "Cages with thin outlines, if present, must sum to the indicated value. Numbers cannot repeat within a cage. (Killer Sudoku)"
         ]
@@ -255,11 +255,11 @@ export const genreInfo = {
     },
     "towers": {
         name: "Towers",
-        description: "Place towers so that the right amount can be seen from outside."
+        description: "Place towers so that the indicated amount can be seen from outside."
     },
     "tracks": {
         name: "Tracks",
-        description: "Draw train tracks from A to B that occupy the right numbers of cells in each row and column."
+        description: "Draw train tracks from A to B that occupy the indicated numbers of cells in each row and column."
     },
     "twiddle": {
         name: "Twiddle",
@@ -267,8 +267,9 @@ export const genreInfo = {
     },
     "undead": {
         name: "Undead",
-        description: "Place monsters so that the right number can be seen through the mirrors.",
+        description: "Place monsters so that the indicated amount can be seen through the mirrors.",
         rules: [
+            "The amounts of each monster are indicated above the grid.",
             "Clues around the edge indicate how many monsters can be seen in a straight line from there.",
             "Pre-placed diagonal lines are mirrors.",
             "Vampires can't be seen through mirrors.",
