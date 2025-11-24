@@ -89,7 +89,9 @@ function showEditFileDialog(file: GameModel, id: number) {
     fileDialog.value?.show()
 }
 
-function showDeleteFileDialog(file: GameModel, id: number) {
+function showDeleteFileDialog(file: GameModel | undefined, id: number | undefined) {
+    if (!file || (id === undefined)) return;
+
     selectedFile.value = file
     fileIndex.value = id
 
@@ -181,6 +183,9 @@ watch(host, () => {
 onMounted(() => {
     if (!fileDialogElem.value) {
         throw new Error("File modal not initialized")
+    }
+    if (!deleteDialogElem.value) {
+        throw new Error("Delete file modal not initialized")
     }
     fileDialog.value = new Modal(fileDialogElem.value)
     deleteDialog.value = new Modal(deleteDialogElem.value)
