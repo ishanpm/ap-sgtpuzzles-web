@@ -62,7 +62,8 @@ export const genreInfo = {
             "When a beam enters a tile diagonally adjacent to a marble, it will be deflected 90 degrees away from it.",
             "When a beam enters a tile diagonally adjacent to two marbles, it will be reflected back the way it came.",
             "If a marble is diagonally adjacent to a wall, it will reflect beams from that wall back to the same wall.",
-            "Beams are not reflected if a marble is directly in front of them."
+            "Beams are not reflected if a marble is directly in front of them.",
+            "(There may be multiple solutions. Any solution which satisfies every available clue, including unrevealed ones, will be accepted.)"
         ],
         controls: {
             primary: "Toggle marble; Fire laser",
@@ -81,31 +82,57 @@ export const genreInfo = {
     },
     "cube": {
         name: "Cube",
-        description: "Roll the polyhedron so that all sides are painted blue."
+        description: "Roll the polyhedron so that all sides are painted blue.",
+        rules: [
+            "Each time the polyhedron rolls, the face that lands on the board will swap colors with the cell it lands on."
+        ]
     },
     "dominosa": {
         name: "Dominosa",
-        description: "Place dominoes so that each combination of numbers appears once."
+        description: "Place dominoes so that each combination of numbers appears exactly once."
     },
     "fifteen": {
         name: "Fifteen",
-        description: "Slide the tiles to arrange them in ascending order."
+        description: "Slide the tiles to arrange them in ascending order.",
+        rules: [
+            "The top left corner must contain the number 1, with numbers ascending from left to right along a row and then continuing in the row below.",
+            "The gap must end in the bottom right corner."
+        ]
     },
     "filling": {
         name: "Filling",
-        description: "Fill the grid with numbers so that each number is connected to that many of itself."
+        description: "Fill the grid with numbers so that each number is connected to that many of itself.",
+        rules: [
+            "Every cell must have a number.",
+            "Connected cells with the same number form a region.",
+            "The area of a region must equal the number it contains.",
+            "Some regions may have no given numbers, and must be discovered."
+        ]
     },
     "flip": {
         name: "Flip",
-        description: "Flip all the tiles to white."
+        description: "Flip all the tiles to white.",
+        rules: [
+            "The squares in the center of each tile indicate which tiles will be flipped when you click it, with the filled square representing the tile itself."
+        ]
     },
     "flood": {
         name: "Flood",
-        description: "Make the board a single color using flood-fills."
+        description: "Make the board a single color using flood-fills.",
+        rules: [
+            "Each move, change the upper left tile and all connected tiles of the same color to any other color.",
+            "Change all tiles to the same color within the move limit to win."
+        ]
     },
     "galaxies": {
         name: "Galaxies",
-        description: "Divide the grid into rotationally symmetric regions."
+        description: "Divide the grid into rotationally symmetric regions.",
+        rules: [
+            "Every region must contain exactly one circle.",
+            "Each region must have half-turn symmetry about its circle.",
+            "Circles cannot lie on region borders.",
+            "Regions cannot have internal walls."
+        ]
     },
     "group": {
         name: "Group",
@@ -126,12 +153,22 @@ export const genreInfo = {
         description: "Guess the hidden color pattern.",
         rules: [
             "Black circles indicate how many pegs are correct.",
-            "White circles indicate how many pegs are the right color, but in the wrong location."
+            "White circles indicate how many pegs are the right color, but in the wrong location.",
+            "Colors may repeat (unless forbidden by the game type).",
+            "Empty slots are not allowed (unless allowed by the game type)."
         ]
     },
     "inertia": {
         name: "Inertia",
-        description: "Collect all the gems while avoiding the mines."
+        description: "Collect all the gems while avoiding the mines.",
+        rules: [
+            "The ball may move in any orthogonal or diagonal direction.",
+            "When moved, the ball will continue to move in the same direction until it collides with a wall or the edge of the board.",
+            "The ball will collect any gems it passes over.",
+            "The ball will be destroyed if it passes over a mine.",
+            "The ball will stop moving if it passes over a stop (indicated a dashed circle).",
+            "Collecting the last gem and hitting a mine in the same movement does not count as a victory."
+        ]
     },
     "keen": {
         name: "Keen",
@@ -145,15 +182,31 @@ export const genreInfo = {
     },
     "lightup": {
         name: "Lightup",
-        description: "Light up the whole grid without shining lights on each other."
+        description: "Light up the whole grid without shining lights on each other.",
+        rules: [
+            "Lights illuminate all cells in the same row and column, stopping at shaded cells.",
+            "Lights must not be illuminated by other lights.",
+            "Numbers indicate how many lights are in the orthogonally adjacent cells."
+        ]
     },
     "loopy": {
         name: "Loopy",
-        description: "Draw a loop that touches each clue the indicated number of times."
+        description: "Draw a loop that touches each clue the indicated number of times.",
+        rules: [
+            "The loop cannot branch or cross itself.",
+            "Numbers indicate how many loop segments surround the cell."
+        ]
     },
     "magnets": {
         name: "Magnets",
-        description: "Place magnets without letting similar polarities touch."
+        description: "Place magnets without letting similar polarities touch.",
+        rules: [
+            "All cells must contain a magnet or be marked empty.",
+            "Magnets consist of a plus and a minus.",
+            "Numbers above and to the left of the grid indicate how many cells in that row or column contain a plus.",
+            "Numbers below and to the right of the grid indicate how many cells in that row or column contain a minus.",
+            "Pluses and minuses must not be orthogonally adjacent to identical symbols."
+        ]
     },
     "map": {
         name: "Map",
@@ -161,27 +214,62 @@ export const genreInfo = {
     },
     "mines": {
         name: "Mines",
-        description: "Open every cell without clicking mines."
+        description: "Open every cell without clicking mines.",
+        rules: [
+            "Numbers indicate the number of mines in the surrounding 3x3 area.",
+            "The board must have the indicated total number of mines.",
+            "The cell marked with an X, if present, is guaranteed to be safe.",
+            "If there is no marked cell, the first click is guaranteed to be safe."
+        ]
     },
     "mosaic": {
         name: "Mosaic",
-        description: "Shade some cells so that each clue is near the indicated number of shaded cells."
+        description: "Shade some cells so that each clue is near the indicated number of shaded cells.",
+        rules: [
+            "All cells must be either shaded or unshaded.",
+            "Clues indicate the number of shaded cells in the 3x3 area surrounding the clue.",
+            "(By default, shaded cells are black, unshaded cells are white, and undecided cells are teal. Client-side mods may affect this.)"
+        ]
     },
     "net": {
         name: "Net",
-        description: "Rotate pieces to form a connected network."
+        description: "Rotate pieces to form a connected network.",
+        rules: [
+            "Loops are not allowed.",
+            "Dead-ends are not allowed, except at the given blue and black boxes.",
+            "The network cannot pass through red borders.",
+            "The board may wrap, unless it is surrounded by a red border."
+        ]
     },
     "netslide": {
         name: "NetSlide",
-        description: "Slide rows and columns to form a connected network."
+        description: "Slide rows and columns to form a connected network.",
+        rules: [
+            "Loops are not allowed.",
+            "Dead-ends are not allowed, except at the given blue and black boxes.",
+            "The network cannot pass through red borders.",
+            "The board may wrap, unless it is surrounded by a red border.",
+            "The row and columnn containing the black box cannot move."
+        ]
     },
     "palisade": {
         name: "Palisade",
-        description: "Divide the grid into regions of a given area."
+        description: "Divide the grid into regions of a given area.",
+        rules: [
+            "All regions must have the indicated area.",
+            "Numbers indicate how many region borders surround the cell.",
+            "Regions cannot have internal borders."
+        ]
     },
     "pattern": {
         name: "Pattern",
-        description: "Shade some cells so that each row and column has blocks of the indicated lengths."
+        description: "Shade some cells so that each row and column has blocks of the indicated lengths.",
+        rules: [
+            "All cells must be either shaded or unshaded.",
+            "Numbers indicate the lengths of all runs of shaded cells within their row or column, as well as their order.",
+            "Runs of shaded cells must be separated by at least one unshaded cell.",
+            "(By default, shaded cells are black, unshaded cells are white, and undecided cells are gray. Client-side mods may affect this.)"
+        ]
     },
     "pearl": {
         name: "Pearl",
@@ -194,13 +282,18 @@ export const genreInfo = {
     },
     "pegs": {
         name: "Pegs",
-        description: "Capture pegs by hopping them over each other until only one remains."
+        description: "Capture pegs by hopping them over each other until only one remains.",
+        rules: [
+            "Pegs move by hopping over exactly one orthogonally adjacent peg.",
+            "When a peg is hopped over, it is removed."
+        ]
     },
     "range": {
         name: "Range",
         description: "Shade cells so that each clue sees the indicated number of ushaded cells.",
         rules: [
             "Clues indicate the total number of unshaded cells reachable in a horizontal or vertical line from the clue, including itself.",
+            "Clues cannot be shaded.",
             "Shaded cells cannot be adjacent.",
             "The unshaded cells must all be connected."
         ]
@@ -208,10 +301,20 @@ export const genreInfo = {
     "rect": {
         name: "Rect",
         description: "Divide the grid into rectangles with the indicated areas.",
+        rules: [
+            "All regions must be rectangular.",
+            "Numbers indicate the area of the enclosing region.",
+            "Regions can contain multiple numbers, or none at all."
+        ]
     },
     "samegame": {
         name: "SameGame",
-        description: "Clear the grid by removing connected groups of colored blocks."
+        description: "Clear the grid by removing connected groups of colored blocks.",
+        rules: [
+            "Only same-colored groups of at least two blocks can be removed.",
+            "Blocks fall individually until they land on another block or the edge of the board.",
+            "If a column is empty, all blocks to the right slide left to close the gap."
+        ]
     },
     "signpost": {
         name: "Signpost",
@@ -228,11 +331,19 @@ export const genreInfo = {
     },
     "sixteen": {
         name: "Sixteen",
-        description: "Slide rows and columns to arrange the numbers in ascending order."
+        description: "Slide rows and columns to arrange the numbers in ascending order.",
+        rules: [
+            "The top left corner must contain the number 1, with numbers ascending from left to right along a row and then continuing in the row below.",
+        ]
     },
     "slant": {
         name: "Slant",
-        description: "Draw a slant in each cell so each clues touches the given number of lines."
+        description: "Draw a slant in each cell so each clue touches the given number of lines.",
+        rules: [
+            "Each cell must contain a diagonal line.",
+            "Clues indicate how many lines touch that vertex.",
+            "Lines must not form loops."
+        ]
     },
     "solo": {
         name: "Solo",
@@ -247,29 +358,42 @@ export const genreInfo = {
         name: "Tents",
         description: "Place a tent next to each tree so that none of them touch.",
         rules: [
-            "Each tree must be next to its own tent, and each tent must be next to its own tree.",
+            "Each tree must be orthogonally adjacent to its own tent, and each tent must be orthogonally adjacent to its own tree.",
             "A tent can be next to multiple trees, but it must be possible to pair the tents and trees without overlaps.",
-            "Tents cannot be adjacent, not even diagonally.",
-            "Clues indicate the number of tents in a row or column"
+            "Tents cannot touch, not even diagonally.",
+            "Clues indicate the number of tents in a row or column."
         ]
     },
     "towers": {
         name: "Towers",
-        description: "Place towers so that the indicated amount can be seen from outside."
+        description: "Place towers so that the indicated amount can be seen from outside.",
+        rules: [
+            "Each row and column must contain the numbers from 1 to the grid size once each, representing the height of the tower in that cell.",
+            "Clues indicate how many towers they see in their row or column.",
+            "Clues cannot see smaller towers past larger ones."
+        ]
     },
     "tracks": {
         name: "Tracks",
-        description: "Draw train tracks from A to B that occupy the indicated numbers of cells in each row and column."
+        description: "Draw train tracks from A to B that occupy the indicated numbers of cells in each row and column.",
+        rules: [
+            "There cannot be any isolated tracks.",
+            "Tracks cannot branch or cross over each other."
+        ]
     },
     "twiddle": {
         name: "Twiddle",
-        description: "Rotate blocks of numbers to arrange them in ascending order."
+        description: "Rotate blocks of numbers to arrange them in ascending order.",
+        rules: [
+            "The top left corner must contain the number 1, with numbers ascending from left to right along a row and then continuing in the row below.",
+            "Triangles, if present, must point upwards."
+        ]
     },
     "undead": {
         name: "Undead",
         description: "Place monsters so that the indicated amount can be seen through the mirrors.",
         rules: [
-            "The amounts of each monster are indicated above the grid.",
+            "The total quantity of each monster is indicated above the grid.",
             "Clues around the edge indicate how many monsters can be seen in a straight line from there.",
             "Pre-placed diagonal lines are mirrors.",
             "Vampires can't be seen through mirrors.",
@@ -290,7 +414,12 @@ export const genreInfo = {
     },
     "unruly": {
         name: "Unruly",
-        description: "Shade cells so that no line of three cells has the same color."
+        description: "Shade cells so that no line of three cells has the same color.",
+        rules: [
+            "All cells must be shaded or unshaded.",
+            "There must not be any horizontal or vertical line of three shaded cells or three unshaded cells.",
+            "Each row and column must have an equal number of shaded cells and unshaded cells."
+        ]
 
     },
     "untangle": {
