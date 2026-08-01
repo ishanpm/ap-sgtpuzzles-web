@@ -354,6 +354,38 @@ function initStores() {
         }
     })
 
+    // Chat box
+    Alpine.store("chatbox", {
+        collapsed: true,
+        unreadCount: 0,
+        composeText: "",
+        messages: [],
+        toggleCollapsed() {
+            this.unreadCount = 0;
+            this.collapsed = !this.collapsed;
+        },
+        appendMessage(message) {
+            this.messages.push(message)
+
+            const messageLimit = 1000;
+
+            if (this.messages.length > messageLimit) {
+                this.messages = this.messages.slice(this.messages.length - messageLimit)
+            }
+
+            if (message.highlight || message.type == 'chat') {
+                this.unreadCount++;
+            }
+        },
+        appendEcho(text) {
+            this.appendMessage({type: 'echo', data: [{text: text}], highlight: false})
+        },
+        sendChat(text) {
+            sendChat(text)
+            this.composeText = "";
+        }
+    })
+
     // Widget to load puzzles on-demand
     // TODO make this with proper UI
     Alpine.store("debugLoader", {
@@ -988,6 +1020,42 @@ function logEvent(event) {
 }
 
 /**
+ * @param {import("archipelago.js").PrintJSONPacket} event 
+ */
+function onPrintJson(event) {
+    function processMessagePart(part) {
+        const itemTypes = {0: 'filler', 1: 'progression', 2: 'useful', 4: 'trap'}
+        switch (part.type) {
+            case "player_id":
+                return {text: playerIdToName(+part.text), detail: part.text, type: "player"}
+            case "item_id":
+                return {text: itemIdToName(+part.text), detail: part.text, type: "item", itemType: itemTypes[part.flags]}
+            case "location_id":
+                return {text: locationIdToName(+part.text), detail: part.text, type: "location"}
+            default: return part
+        }
+    }
+
+    const chatbox = Alpine.store("chatbox")
+    let mySlot = client.players.self.slot;
+
+    let highlight = false
+    if (event.item && event.item.player === mySlot) {
+        highlight = true;
+    }
+    if (event.receiving === mySlot) {
+        highlight = true;
+    }
+
+    const newMessage = {
+        type: (event.type ?? 'unknown').toLowerCase(),
+        data: event.data.map(processMessagePart),
+        highlight: highlight
+    }
+    chatbox.appendMessage(newMessage)
+}
+
+/**
  * @param {import("archipelago.js").SetReplyPacket} event 
  */
 function onSetReply(event) {
@@ -1037,6 +1105,35 @@ function onDisconnected() {
     }
     apReady = false;
     console.log("disconnected")
+
+    const chatbox = Alpine.store("chatbox")
+    chatbox.appendEcho("Disconnected from Archipelago.")
+}
+
+function sendChat(text) {
+    const chatbox = Alpine.store("chatbox")
+
+    if (!text) return;
+
+    if (text[0] == "/") {
+        chatbox.appendEcho(text)
+        if (text == "/debugon") {
+            Alpine.store("debugMode", true)
+            chatbox.appendEcho("Debug mode enabled.")
+        } else if (text == "/debugoff") {
+            Alpine.store("debugMode", false)
+            chatbox.appendEcho("Debug mode disabled.")
+        } else {
+            chatbox.appendEcho("/debugon - enable debug mode\n/debugoff - disable debug mode")
+        }
+        return
+    }
+
+    if (!client || !apReady) {
+        chatbox.appendEcho("Not connected to Archipelago.")
+        return
+    }
+    client.messages.say(text)
 }
 
 async function connectAP(hostname, port, player, password) {
@@ -1046,6 +1143,7 @@ async function connectAP(hostname, port, player, password) {
 
         // TODO probably unnecessary to sync both due to ReceivedItems and RoomUpdate..?
         client.socket.on("receivedPacket", logEvent);
+        client.socket.on("printJSON", onPrintJson)
         client.socket.on("receivedItems", onReceiveItems);
         client.socket.on("roomUpdate", syncAPStatus);
         client.socket.on("setReply", onSetReply)
@@ -1069,6 +1167,9 @@ async function connectAP(hostname, port, player, password) {
     console.log("connected to AP");
 
     syncAPStatus();
+    
+    const chatbox = Alpine.store("chatbox")
+    chatbox.appendEcho("Connected to Archipelago.")
 }
 
 function isApReady() {
@@ -1098,6 +1199,10 @@ function locationIdToName(id) {
 
 function locationNameToId(name) {
     return client.package.findPackage("Simon Tatham's Portable Puzzle Collection").locationTable[name]
+}
+
+function playerIdToName(id) {
+    return client.players.slots[id].name
 }
 
 /**
