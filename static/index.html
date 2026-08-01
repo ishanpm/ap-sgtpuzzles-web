@@ -201,16 +201,16 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
         </div>
     </div>
     <div x-data="$store.chatbox" class="chatbox" :class="{collapsed: collapsed}">
-        <h2 class="chatbox-header" tabindex="0" @click="toggleCollapsed" x-text="collapsed ? ('['+(unreadCount < 100 ? unreadCount : '99+')+']') : 'Archipelago'">
+        <h2 class="chatbox-header" tabindex="0" @click="toggleCollapsed" x-text="('['+(unreadCount < 100 ? unreadCount : '99+')+']') + (collapsed ? '' : ' Archipelago')">
         </h2>
         <template x-if="!collapsed">
             <div class="chatbox-divider"></div>
         </template>
         <template x-if="!collapsed">
             <div class="chatbox-content">
-                <div class="chat-history">
-                    <template x-for="message in messages">
-                        <div class="chat-line" :class="[message.type, message.highlight && 'highlight']">
+                <div class="chat-history" id="chat-history">
+                    <template x-for="message in messages" :key="message.id">
+                        <div class="chat-line" :class="[message.type, message.highlight && 'highlight', message.id % 2 == 1 && 'alternate']">
                             <template x-for="fragment in message.data">
                                 <span x-text="fragment.text" :class="[fragment.type, fragment.itemType]" :title="fragment.detail"></span>
                             </template>

@@ -18,8 +18,9 @@
   "homepage": "https://github.com/ishanpm/ap-sgtpuzzles-web#readme",
   "dependencies": {
     "alpinejs": "^3.14.1",
-    "archipelago.js": "^2.0.4",
-    "bootstrap": "^5.3.3"
+    "archipelago.js": "^2.1.0",
+    "bootstrap": "^5.3.3",
+    "jquery": "^4.0.0"
   },
   "devDependencies": {
     "webpack": "^5.94.0"

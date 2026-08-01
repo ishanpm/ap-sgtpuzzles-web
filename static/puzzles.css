@@ -200,11 +200,11 @@ body {
     padding: 2px;
 }
 
-.chat-line:nth-of-type(2n) {
+.chat-line.alternate {
     background-color: #eee;
 }
 
-.chat-line.highlight {
+.chat-line.highlight, .chat-line.alternate.highlight {
     background-color: #ffc;
 }
 

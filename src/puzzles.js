@@ -4,6 +4,7 @@ const {
     itemsHandlingFlags
 } = require("archipelago.js");
 const Alpine = require('alpinejs').default;
+const $ = require('jquery')
 const SaveData = require("./savedata.js");
 const {GameSave, getFile, getFileList, openDatabase} = SaveData;
 const {config} = require("config")
@@ -360,28 +361,62 @@ function initStores() {
         unreadCount: 0,
         composeText: "",
         messages: [],
+        messageCount: 0,
         toggleCollapsed() {
-            this.unreadCount = 0;
             this.collapsed = !this.collapsed;
+
+            if (!this.collapsed) {
+                this.scrollToBottom(true)
+            }
         },
         appendMessage(message) {
+            message.id = this.messageCount++;
+
             this.messages.push(message)
 
-            const messageLimit = 1000;
+            const messageLimit = 20;
 
             if (this.messages.length > messageLimit) {
                 this.messages = this.messages.slice(this.messages.length - messageLimit)
             }
 
-            if (message.highlight || message.type == 'chat') {
-                this.unreadCount++;
+            // TODO: separate notification for priority messages?
+            // if (message.highlight || message.type == 'chat') {
+            //     this.unreadCount++;
+            // }
+            this.unreadCount++;
+            this.scrollToBottom(false)
+        },
+        scrollToBottom(force) {
+            let isPinned = false;
+
+            if (force) {
+                isPinned = true;
+            } else {
+                let elem = $("#chat-history");
+                if (elem.length == 0) return;
+
+                // Check if we are scrolled to the bottom
+                const scrollPinHeight = 10
+                if (elem.scrollTop() + elem.innerHeight() >= elem[0].scrollHeight - scrollPinHeight) {
+                    isPinned = true;
+                }
             }
+
+            this.unreadCount = 0;
+
+            // Wait until next tick so any new messages can render
+            Alpine.nextTick(() => {
+                let elem = $("#chat-history");
+                elem.scrollTop(elem[0].scrollHeight);
+            })
         },
         appendEcho(text) {
             this.appendMessage({type: 'echo', data: [{text: text}], highlight: false})
         },
         sendChat(text) {
             sendChat(text)
+            this.scrollToBottom(true)
             this.composeText = "";
         }
     })
@@ -1116,17 +1151,7 @@ function sendChat(text) {
     if (!text) return;
 
     if (text[0] == "/") {
-        chatbox.appendEcho(text)
-        if (text == "/debugon") {
-            Alpine.store("debugMode", true)
-            chatbox.appendEcho("Debug mode enabled.")
-        } else if (text == "/debugoff") {
-            Alpine.store("debugMode", false)
-            chatbox.appendEcho("Debug mode disabled.")
-        } else {
-            chatbox.appendEcho("/debugon - enable debug mode\n/debugoff - disable debug mode")
-        }
-        return
+        return handleSlashCommand(text)
     }
 
     if (!client || !apReady) {
@@ -1134,6 +1159,73 @@ function sendChat(text) {
         return
     }
     client.messages.say(text)
+}
+
+async function handleSlashCommand(text) {
+    const chatbox = Alpine.store("chatbox")
+    const puzzleList = Alpine.store("puzzleList")
+
+    chatbox.appendEcho(text)
+
+    let parts = text.trim().split(/\s+/)
+    let command = parts[0] ?? ""
+
+    if (command == "/debugon") {
+        Alpine.store("debugMode", true)
+        chatbox.appendEcho("Debug mode enabled.")
+    } else if (command  == "/debugoff") {
+        Alpine.store("debugMode", false)
+        chatbox.appendEcho("Debug mode disabled.")
+    } else if (command == "/delete_puzzle_data") {
+        if (isNaN(parts[1])) {
+            chatbox.appendEcho("Specify a puzzle number.")
+            return
+        }
+
+        let puzzleIndex = +parts[1]
+        let puzzle = puzzleList.entries[puzzleIndex-1];
+        if (!puzzle) {
+            chatbox.appendEcho("No puzzle with that number.")
+            return
+        }
+
+        await deletePuzzleData(puzzleIndex)
+        chatbox.appendEcho(`Deleted save data for "${puzzle.desc}".`)
+    } else if (command == "/set_puzzle_seed") {
+        if (isNaN(parts[1])) {
+            chatbox.appendEcho("Specify a puzzle number.")
+        }
+
+        let puzzleIndex = +parts[1]
+        let puzzle = puzzleList.entries[puzzleIndex-1];
+        if (!puzzle) {
+            chatbox.appendEcho("No puzzle with that number.")
+        }
+
+        let newSeed = parts[2] ?? "";
+
+        puzzle.puzzleSeed = newSeed
+        puzzle.updateDescription()
+
+        chatbox.appendEcho(`Updated seed for "${puzzle.desc}".`)
+    } else if (command == "/solve_collected") {
+        let solveCount = 0
+        for (let puzzle of puzzleList.entries) {
+            if (!puzzle.locked && !puzzle.solved && puzzle.collected) {
+                puzzleList.markSolved(puzzle)
+                solveCount++;
+            }
+        }
+        chatbox.appendEcho(`${solveCount} puzzle(s) marked solved.`)
+    } else {
+        chatbox.appendEcho(
+            "/debugon - Enable debug mode\n"+
+            "/debugoff - Disable debug mode\n"+
+            "/delete_puzzle_data [num] - Delete save data for a specific puzzle\n"+
+            "/set_puzzle_seed [num] [newParameters] - Overwrite the seed for a specific puzzle\n"+
+            "/solve_collected - Auto-solve all puzzles whose locations have been checked"
+        )
+    }
 }
 
 async function connectAP(hostname, port, player, password) {
