@@ -304,7 +304,7 @@ export const genreInfo = {
         rules: [
             "All regions must be rectangular.",
             "Numbers indicate the area of the enclosing region.",
-            "Regions can contain multiple numbers, or none at all."
+            "All regions contain exactly one number."
         ]
     },
     "samegame": {
