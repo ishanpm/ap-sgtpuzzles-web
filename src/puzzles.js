@@ -403,13 +403,15 @@ function initStores() {
                 }
             }
 
-            this.unreadCount = 0;
+            if (isPinned) {
+                this.unreadCount = 0;
 
-            // Wait until next tick so any new messages can render
-            Alpine.nextTick(() => {
-                let elem = $("#chat-history");
-                elem.scrollTop(elem[0].scrollHeight);
-            })
+                // Wait until next tick so any new messages can render
+                Alpine.nextTick(() => {
+                    let elem = $("#chat-history");
+                    elem.scrollTop(elem[0].scrollHeight);
+                })
+            }
         },
         appendEcho(text) {
             this.appendMessage({type: 'echo', data: [{text: text}], highlight: false})
