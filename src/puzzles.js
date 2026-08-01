@@ -1219,14 +1219,18 @@ async function handleSlashCommand(text) {
             }
         }
         chatbox.appendEcho(`${solveCount} puzzle(s) marked solved.`)
-    } else {
+    } else if (command == "/help") {
         chatbox.appendEcho(
+            "These commands are used to cheat or work around generation errors. Use at your own risk:\n\n"+
+
             "/debugon - Enable debug mode\n"+
             "/debugoff - Disable debug mode\n"+
             "/delete_puzzle_data [num] - Delete save data for a specific puzzle\n"+
             "/set_puzzle_seed [num] [newParameters] - Overwrite the seed for a specific puzzle\n"+
             "/solve_collected - Auto-solve all puzzles whose locations have been checked"
         )
+    } else {
+        chatbox.appendEcho("Unknown command. Use /help to see available commands.")
     }
 }
 
