@@ -374,7 +374,7 @@ function initStores() {
 
             this.messages.push(message)
 
-            const messageLimit = 20;
+            const messageLimit = 1000;
 
             if (this.messages.length > messageLimit) {
                 this.messages = this.messages.slice(this.messages.length - messageLimit)
