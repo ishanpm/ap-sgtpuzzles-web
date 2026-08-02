@@ -429,6 +429,7 @@ function initStores() {
         genre: "net",
         id: "",
         singleMode: false,
+        showUnsupported: false,
         load() {
             Alpine.store("puzzleList").selectPuzzle(null);
             loadPuzzle(this.genre, this.id, this.singleMode);
@@ -1219,6 +1220,9 @@ async function handleSlashCommand(text) {
             }
         }
         chatbox.appendEcho(`${solveCount} puzzle(s) marked solved.`)
+    } else if (command == "/show_unsupported") {
+        Alpine.store("debugLoader").showUnsupported = true;
+        chatbox.appendEcho("Unsupported genres are now enabled in Freeplay.")
     } else if (command == "/help") {
         chatbox.appendEcho(
             "These commands are used to cheat or work around generation errors. Use at your own risk:\n\n"+
@@ -1227,7 +1231,8 @@ async function handleSlashCommand(text) {
             "/debugoff - Disable debug mode\n"+
             "/delete_puzzle_data [num] - Delete save data for a specific puzzle\n"+
             "/set_puzzle_seed [num] [newParameters] - Overwrite the seed for a specific puzzle\n"+
-            "/solve_collected - Auto-solve all puzzles whose locations have been checked"
+            "/solve_collected - Auto-solve all puzzles whose locations have been checked\n"+
+            "/show_unsupported - Display unfinished and unsupported genres in Freeplay"
         )
     } else {
         chatbox.appendEcho("Unknown command. Use /help to see available commands.")
@@ -1315,6 +1320,7 @@ function loadFileData(file, secretMode) {
     }
 
     let isFreeplay = (file.id < 0);
+    let showUnsupported = Alpine.store("debugLoader").showUnsupported;
 
     // TODO styling sometimes doesn't update when reconnecting while a puzzle is selected.
     // Seems like a bug with Alpine (or with how I'm using it), I'll probably have to switch to a different
@@ -1333,7 +1339,7 @@ function loadFileData(file, secretMode) {
         if (isFreeplay) {
             newEntry = ArchipelagoPuzzle.fromPuzzlesString(file.puzzles[i], null, i+1)
 
-            if ((genreInfo[newEntry.genre].hidden && !secretMode) || genreInfo[newEntry.genre].evenMoreHidden) {
+            if (!showUnsupported && ((genreInfo[newEntry.genre].hidden && !secretMode) || genreInfo[newEntry.genre].evenMoreHidden)) {
                 // Skip hidden genres
                 continue;
             }

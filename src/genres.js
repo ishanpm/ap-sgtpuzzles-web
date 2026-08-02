@@ -437,7 +437,7 @@ for (let genre of ["abcd", "ascent", "boats", "bricks", "clusters", "crossing", 
     "salad", "seismic", "spokes", "sticks", "subsets"]) {
     genreInfo[genre] = {
         name: genre,
-        description: "Unsupported puzzle; subject to change.",
+        description: "From xsheep/puzzles-unreleased. Unsupported; subject to change. Cannot be used in multiworlds.",
         helpLink: "https://github.com/x-sheep/puzzles-unreleased",
         hidden: true,
         evenMoreHidden: true
