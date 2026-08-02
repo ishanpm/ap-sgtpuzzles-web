@@ -146,11 +146,27 @@ body {
 
     display: flex;
     flex-direction: column;
-    padding: 0.5em;
+}
+
+.chatbox.collapsed {
+    width: 55px;
+    height: 50px;
 }
 
 .chatbox-header {
     margin: 0px;
+    padding-left: 0.3em;
+    padding-right: 0.3em;
+    padding-top: 0.3em;
+    overflow: hidden;
+    text-overflow: clip;
+    cursor: pointer;
+}
+
+.chatbox.collapsed .chatbox-header {
+    padding-left: 0px;
+    padding-right: 0px;
+    text-align: center;
 }
 
 .chatbox-divider {
@@ -158,10 +174,15 @@ body {
     background-color: #aaa;
     margin-top: 5px;
     margin-bottom: 5px;
+    margin-left: 0.3em;
+    margin-right: 0.3em;
 }
 
 .chatbox-content {
     flex-grow: 1;
+    margin-left: 0.3em;
+    margin-right: 0.3em;
+    margin-bottom: 0.3em;
 
     display: flex;
     flex-direction: column;
@@ -170,8 +191,50 @@ body {
 
 .chat-history {
     flex-grow: 1;
+    flex-basis: 0px;
     border: 1px solid #aaa;
     overflow-y: scroll;
+}
+
+.chat-line {
+    padding: 2px;
+}
+
+.chat-line.alternate {
+    background-color: #eee;
+}
+
+.chat-line.highlight, .chat-line.alternate.highlight {
+    background-color: #ffc;
+}
+
+.chat-line span {
+  white-space-collapse: preserve;
+}
+
+.chat-line.echo {
+    font-style: italic;
+    color: #333;
+}
+
+.chat-line .player, .chat-line .item, .chat-line .location {
+  font-weight: bold;
+}
+
+.chat-line .item.filler {
+  color: #866500;
+}
+
+.chat-line .item.useful {
+  color: #257700;
+}
+
+.chat-line .item.progression {
+  color: #00c;
+}
+
+.chat-line .item.trap {
+  color: #c00;
 }
 
 .chat-message {
@@ -182,6 +245,6 @@ body {
     gap: 2px;
 }
 
-.chat-message input {
+.chat-message input:not([type='submit']) {
     flex-grow: 1;
 }
