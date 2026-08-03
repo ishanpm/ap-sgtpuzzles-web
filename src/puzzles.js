@@ -1059,6 +1059,7 @@ function logEvent(event) {
 
 /**
  * @param {import("archipelago.js").PrintJSONPacket} event 
+ * @deprecated
  */
 function onPrintJson(event) {
     function processMessagePart(part) {
@@ -1090,6 +1091,24 @@ function onPrintJson(event) {
         data: event.data.map(processMessagePart),
         highlight: highlight
     }
+    chatbox.appendMessage(newMessage)
+}
+
+/**
+ * @param {string} text
+ * @param {import("archipelago.js").MessageNode[]} nodes 
+ */
+function onMessage(text, nodes) {
+    const chatbox = Alpine.store("chatbox")
+
+
+    // TODO message pretty printing
+    const newMessage = {
+        type: "message",
+        data: [{text: text}],
+        highlight: false
+    }
+
     chatbox.appendMessage(newMessage)
 }
 
@@ -1246,12 +1265,13 @@ async function connectAP(hostname, port, player, password) {
 
         // TODO probably unnecessary to sync both due to ReceivedItems and RoomUpdate..?
         client.socket.on("receivedPacket", logEvent);
-        client.socket.on("printJSON", onPrintJson)
         client.socket.on("receivedItems", onReceiveItems);
         client.socket.on("roomUpdate", syncAPStatus);
         client.socket.on("setReply", onSetReply)
         client.socket.on("retrieved", onKeysRetreived)
         client.socket.on("disconnected", onDisconnected);
+
+        client.messages.on("message", onMessage);
     }
 
     remoteSolved = {};
