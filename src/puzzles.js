@@ -717,6 +717,14 @@ function newPuzzle() {
     Alpine.store("puzzleState").solved = false;
 }
 
+function puzzleFromId() {
+    sendMessage("puzzleFromId")
+}
+
+function puzzleFromSeed() {
+    sendMessage("puzzleFromSeed")
+}
+
 function restartPuzzle() {
     sendMessage("restartPuzzle");
 }
@@ -1101,12 +1109,31 @@ function onPrintJson(event) {
 function onMessage(text, nodes) {
     const chatbox = Alpine.store("chatbox")
 
+    let highlight = false
+
+    /**
+     * @param {import("archipelago.js").MessageNode} n
+     */
+    function processNode(n) {
+        let result = {type: n.type, text: n.text, itemType: null};
+
+        if (n.type == "item") {
+            result.itemType = n.item.progression ? "progression" : n.item.useful ? "useful" : n.item.trap ? "trap" : "filler"
+            result.detail = result.itemType
+        }
+
+        if (n.type == "player" && n.player.slot == client.players.self.slot && n.player.team == client.players.self.team) {
+            highlight = true
+        }
+
+        return result;
+    }
 
     // TODO message pretty printing
     const newMessage = {
         type: "message",
-        data: [{text: text}],
-        highlight: false
+        data: nodes.map(processNode),
+        highlight: highlight
     }
 
     chatbox.appendMessage(newMessage)
@@ -1387,6 +1414,8 @@ function disconnectAP() {
 // I should probably move these to Alpine
 window.showPreferences = showPreferences;
 window.newPuzzle = newPuzzle;
+window.puzzleFromId = puzzleFromId;
+window.puzzleFromSeed = puzzleFromSeed;
 window.restartPuzzle = restartPuzzle;
 window.undoPuzzle = undoPuzzle;
 window.redoPuzzle = redoPuzzle;

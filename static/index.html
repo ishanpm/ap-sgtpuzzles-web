@@ -83,7 +83,13 @@ entry.locked ? 'locked' : 'unlocked', entry.collected ? 'collected' : 'uncollect
                     :disabled="!$store.puzzleState.loaded">Save puzzle progress</button>
                 </div>
                 <div>
-                    <button :style="{display: $store.singleMode ? 'none' : null}" :disabled="!$store.puzzleState.loaded" onclick="newPuzzle()">New</button>
+                    <template x-if="!$store.singleMode">
+                        <span>
+                            <button :disabled="!$store.puzzleState.loaded" onclick="newPuzzle()">New</button>
+                            <button :disabled="!$store.puzzleState.loaded" onclick="puzzleFromId()">From ID...</button>
+                            <button :disabled="!$store.puzzleState.loaded" onclick="puzzleFromSeed()">From seed...</button>
+                        </span>
+                    </template>
                     <button onclick="restartPuzzle()" :disabled="!$store.puzzleState.loaded">Restart</button>
                     <button onclick="undoPuzzle()" :disabled="!$store.puzzleState.undoEnabled">Undo</button>
                     <button onclick="redoPuzzle()" :disabled="!$store.puzzleState.redoEnabled">Redo</button>
