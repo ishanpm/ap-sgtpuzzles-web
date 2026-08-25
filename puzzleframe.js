@@ -33,6 +33,14 @@ function loadPuzzle(genre) {
     document.head.appendChild(elem)
 }
 
+function puzzleFromId() {
+    command(0);
+}
+
+function puzzleFromSeed() {
+    command(1);
+}
+
 function newPuzzle() {
     solved = false;
     command(5);
@@ -112,6 +120,7 @@ function loadPuzzleData(data) {
 
 const messageHandlers = {
     loadPuzzle, setPreset, showPreferences,
+    puzzleFromId, puzzleFromSeed,
     newPuzzle, restartPuzzle, undoPuzzle, redoPuzzle, solvePuzzle,
     dialogReturnString, dialogReturnInt, dialogConfirm, dialogCancel,
     setNewGameEnabled,
