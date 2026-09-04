@@ -222,19 +222,19 @@ body {
 }
 
 .chat-line .item.filler {
-  color: #866500;
+  color: #0386a4;
 }
 
 .chat-line .item.useful {
-  color: #257700;
+  color: #211acd;
 }
 
 .chat-line .item.progression {
-  color: #00c;
+  color: #a000e9;
 }
 
 .chat-line .item.trap {
-  color: #c00;
+  color: #a64c1f;
 }
 
 .chat-message {
