@@ -2,5 +2,5 @@ export const config = {
     environment: "development",
     enableDebug: true,
     defaultHost: "localhost",
-    version: "0.1.19"
+    version: "0.1.20"
 }
