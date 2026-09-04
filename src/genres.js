@@ -216,10 +216,11 @@ export const genreInfo = {
         name: "Mines",
         description: "Open every cell without clicking mines.",
         rules: [
-            "Numbers indicate the number of mines in the surrounding 3x3 area.",
+            "Numbers indicate the number of mines in the neighboring cells (touching by a corner or edge).",
             "The board must have the indicated total number of mines.",
             "The cell marked with an X, if present, is guaranteed to be safe.",
-            "If there is no marked cell, the first click is guaranteed to be safe."
+            "If there is no marked cell, the first click is guaranteed to be safe.",
+            "(Depending on the grid type, the board may wrap around. Click a numbered cell to highlight its neighbors.)"
         ]
     },
     "mosaic": {
