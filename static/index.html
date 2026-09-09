@@ -32,6 +32,37 @@
                     </template>
                 </ul>
             </div>
+            <div class="puzzle-filters">
+                <div class="puzzle-filters-section">
+                    <label>Group: <select>
+                        <option>None</option>
+                        <option>Status</option>
+                        <option>Genre</option>
+                    </select></label>
+                    <label>Sort: <select>
+                        <option>Number</option>
+                        <option>Status</option>
+                        <option>Genre</option>
+                        <option>Parameters</option>
+                        <option>Received</option>
+                    </select></label>
+                </div>
+                <div class="puzzle-filters-section">
+                    Hide:
+                    <div>
+                        <label>Unsolved <input type="checkbox"/></label>
+                        <label>Solved <input type="checkbox"/></label>
+                    </div>
+                    <div>
+                        <label>Has reward <input type="checkbox"/></label>
+                        <label>Reward collected <input type="checkbox"/></label>
+                    </div>
+                    <div>
+                        <label>Locked <input type="checkbox"/></label>
+                        <label>Unlocked <input type="checkbox"/></label>
+                    </div>
+                </div>
+            </div>
             <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
                 <template x-if="solveTarget !== null">
                     <li>

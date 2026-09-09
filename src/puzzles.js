@@ -47,6 +47,9 @@ class ArchipelagoPuzzle {
         // Puzzle seed (genParams#seed)
         this.puzzleSeed = options.puzzleSeed;
 
+        // Order received from the multiworld, or -1 if not yet received
+        this.order = options.order ?? -1;
+
         this.solved = options.solved ?? false;
         this.collected = options.collected ?? false;
         this.locked = options.locked ?? false;
@@ -239,8 +242,11 @@ function initStores() {
             }
 
             function sortKey(entry) {
-                if (entry.solved) return 1;
-                else if (entry.locked) return 2;
+                if (entry.locked) return 5; // Locked
+                else if (entry.solved && entry.collected) return 4 // Solved
+                else if (entry.solved && !entry.collected) return 3 // Solved; uncollected
+                else if (!entry.solved && entry.collected) return 2 // Unsolved; collected
+                else if (!entry.solved && !entry.collected) return 1 // Unsolved
                 else return 0;
             }
 
@@ -263,6 +269,10 @@ function initStores() {
                 Alpine.store("gamesaves").markFinished();
             }
         }
+    })
+
+    Alpine.store("puzzleSortWidget", {
+
     })
 
     Alpine.store("puzzleList").resort();
@@ -802,8 +812,8 @@ async function deletePuzzleData(index) {
     return;
 }
 
-function hasItem(itemId) {
-    return client.items.received.findIndex(e => e.id == itemId) > -1;
+function getItemOrder(itemId) {
+    return client.items.received.findIndex(e => e.id == itemId);
 }
 
 function syncAPStatus() {
@@ -836,13 +846,18 @@ function syncAPStatus() {
             allSolved = false;
         }
 
-        if (entry.locked && hasItem(itemId)) {
-            entry.locked = false;
-            dirty = true;
+        let order = getItemOrder(itemId)
+        entry.order = order;
 
-            if (currentFile && currentFile.puzzleLocked[entry.index-1]) {
-                currentFile.puzzleLocked[entry.index-1] = false;
-                fileDirty = true;
+        if (entry.locked && order > -1) {
+            if (order > -1) {
+                entry.locked = false;
+                dirty = true;
+
+                if (currentFile && currentFile.puzzleLocked[entry.index-1]) {
+                    currentFile.puzzleLocked[entry.index-1] = false;
+                    fileDirty = true;
+                }
             }
         }
 
@@ -1129,10 +1144,11 @@ function onMessage(text, nodes) {
         return result;
     }
 
-    // TODO message pretty printing
+    let messageData = nodes.map(processNode);
+
     const newMessage = {
         type: "message",
-        data: nodes.map(processNode),
+        data: messageData,
         highlight: highlight
     }
 
@@ -1268,7 +1284,7 @@ async function handleSlashCommand(text) {
         chatbox.appendEcho(`${solveCount} puzzle(s) marked solved.`)
     } else if (command == "/show_unsupported") {
         Alpine.store("debugLoader").showUnsupported = true;
-        chatbox.appendEcho("Unsupported genres are now enabled in Freeplay.")
+        chatbox.appendEcho("Unsupported genres are now visible. Click Freeplay to see them.")
     } else if (command == "/help") {
         chatbox.appendEcho(
             "These commands are used to cheat or work around generation errors. Use at your own risk:\n\n"+
