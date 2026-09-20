@@ -1,8 +1,7 @@
 const {
-    Client, ITEMS_HANDLING_FLAGS, SERVER_PACKET_TYPE, LocationsManager, ReceivedItemsPacket,
+    Client,
     clientStatuses,
-    itemsHandlingFlags
-} = require("archipelago.js");
+} = require("@airbreather/archipelago.js");
 const Alpine = require('alpinejs').default;
 const $ = require('jquery')
 const SaveData = require("./savedata.js");
