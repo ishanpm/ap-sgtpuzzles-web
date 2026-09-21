@@ -188,7 +188,7 @@ function initStores() {
             expandFilters: false,
 
             groupBy: "status",
-            sortBy: "index",
+            sortBy: "order",
             hiddenTypes: [],
             collapsedGroups: [],
         },
