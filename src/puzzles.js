@@ -1,13 +1,11 @@
-const {
-    Client,
-    clientStatuses,
-} = require("@airbreather/archipelago.js");
-const Alpine = require('alpinejs').default;
-const $ = require('jquery')
-const SaveData = require("./savedata.js");
-const {GameSave, getFile, getFileList, openDatabase} = SaveData;
-const {config} = require("config")
-const {genres, genreInfo} = require("./genres.js")
+import * as Archipelago from "archipelago.js"
+const {Client, clientStatuses} = Archipelago;
+import Alpine from 'alpinejs';
+import $ from 'jquery';
+import * as SaveData from "./savedata.js";
+const {GameSave, getFile, getFileList, openDatabase} = SaveData
+import {config} from "config"
+import {genres, genreInfo} from "./genres.js"
 
 document.addEventListener("alpine:init", onInit)
 
@@ -15,7 +13,7 @@ let puzzleframe;
 let apReady = false;
 
 /**
- * @type{import("archipelago.js").JSONRecord}
+ * @type{Archipelago.JSONRecord}
  */
 let slotData;
 
@@ -1133,7 +1131,7 @@ function logEvent(event) {
 }
 
 /**
- * @param {import("archipelago.js").PrintJSONPacket} event 
+ * @param {Archipelago.PrintJSONPacket} event 
  * @deprecated
  */
 function onPrintJson(event) {
@@ -1171,7 +1169,7 @@ function onPrintJson(event) {
 
 /**
  * @param {string} text
- * @param {import("archipelago.js").MessageNode[]} nodes 
+ * @param {Archipelago.MessageNode[]} nodes 
  */
 function onMessage(text, nodes) {
     const chatbox = Alpine.store("chatbox")
@@ -1179,7 +1177,7 @@ function onMessage(text, nodes) {
     let highlight = false
 
     /**
-     * @param {import("archipelago.js").MessageNode} n
+     * @param {Archipelago.MessageNode} n
      */
     function processNode(n) {
         let result = {type: n.type, text: n.text, itemType: null};
@@ -1208,7 +1206,7 @@ function onMessage(text, nodes) {
 }
 
 /**
- * @param {import("archipelago.js").SetReplyPacket} event 
+ * @param {Archipelago.SetReplyPacket} event 
  */
 function onSetReply(event) {
     let team = client.players.self.team
@@ -1221,7 +1219,7 @@ function onSetReply(event) {
 }
 
 /**
- * @param {import("archipelago.js").RetrievedPacket} event 
+ * @param {Archipelago.RetrievedPacket} event 
  */
 function onKeysRetreived(event) {
     let team = client.players.self.team
