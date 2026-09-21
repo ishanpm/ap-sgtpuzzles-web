@@ -60,6 +60,9 @@ body {
     list-style: none;
 }
 
+.puzzle-filters-folder {
+    width: 100%;
+}
 
 .puzzle-selector {
     flex-basis: 20em;
