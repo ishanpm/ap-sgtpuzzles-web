@@ -186,7 +186,15 @@ function initStores() {
         solveCount: 0,
         solveTarget: null,
         finished: false,
-        sortBySolved: false,
+        display: {
+            expandFilters: false,
+
+            groupBy: "status",
+            sortBy: "index",
+            hiddenTypes: [],
+            collapsedGroups: [],
+        },
+
         selectPuzzle(entry) {
             if (!entry) {
                 this.currentIndex = -1;
@@ -240,7 +248,8 @@ function initStores() {
                 else return 0;
             }
 
-            function sortKey(entry) {
+            // Sort key for sorting/grouping by puzzle status
+            function puzzleStatusCode(entry) {
                 if (entry.locked) return 5; // Locked
                 else if (entry.solved && entry.collected) return 4 // Solved
                 else if (entry.solved && !entry.collected) return 3 // Solved; uncollected
@@ -249,13 +258,53 @@ function initStores() {
                 else return 0;
             }
 
-            var sortedEntries = this.entries.slice();
-            
-            if (this.sortBySolved) {
-                sortedEntries.sort((a,b) => compare(sortKey(a), sortKey(b)) || compare(a.id, b.id))
-            } else {
-                sortedEntries.sort((a,b) => compare(a.id, b.id))
+            const groupKeyFunctions = {
+                none: e => 0,
+                status: puzzleStatusCode,
+                genre: e => e.genre,
             }
+
+            const sortKeyFunctions = {
+                index: e => e.id,
+                status: puzzleStatusCode,
+                genre: e => e.genre,
+                parameters: e => `${e.genre}:${e.params}`,
+                order: e => e.order == -1 ? (e.locked ? 2000000 : 1000000) : e.order
+            }
+
+            // Remove mutually exclusive entries from filter settings
+            const mutualExclusions = [["unsolved","solved"],["uncollected","collected"],["locked","unlocked"]]
+
+            let hiddenTypes = this.display.hiddenTypes.slice()
+            hiddenTypes = hiddenTypes.filter((e,i) => {
+                // Find the mutual exclusion group I belong to
+                let myGroup = mutualExclusions.find(group => group.includes(e))
+                // Remove if any member of my group appears later than I do
+                return !myGroup || !myGroup.find(other => hiddenTypes.indexOf(other) > i)
+            })
+
+            // Overwrite filters if this caused a change
+            // This causes re-entry, but won't infinitely loop since applying mutual exclusions is an idempotent operation
+            if (hiddenTypes.length < this.display.hiddenTypes.length) {
+                this.display.hiddenTypes = hiddenTypes;
+            }
+
+            function shouldShowPuzzle(entry) {
+                if (hiddenTypes.includes("locked") && entry.locked) return false;
+                if (hiddenTypes.includes("unlocked") && !entry.locked) return false;
+                if (hiddenTypes.includes("solved") && entry.solved) return false;
+                if (hiddenTypes.includes("unsovled") && !entry.solved) return false;
+                if (hiddenTypes.includes("collected") && entry.collected) return false;
+                if (hiddenTypes.includes("uncollected") && !entry.collected) return false;
+                return true;
+            }
+
+            // Sort puzzles according to settings
+            const groupKey = groupKeyFunctions[this.display.groupBy];
+            const sortKey = sortKeyFunctions[this.display.sortBy];
+            const sortedEntries = this.entries.filter(shouldShowPuzzle);
+            
+            sortedEntries.sort((a,b) => compare(groupKey(a), groupKey(b)) || compare(sortKey(a), sortKey(b)) || compare(a.id, b.id))
 
             this.sortedEntries = sortedEntries;
 
@@ -267,11 +316,13 @@ function initStores() {
                 this.finished = true;
                 Alpine.store("gamesaves").markFinished();
             }
+        },
+        clear() {
+            remoteSolved = {}
+            this.selectPuzzle(null)
+            this.entries = []
+            this.resort()
         }
-    })
-
-    Alpine.store("puzzleSortWidget", {
-
     })
 
     Alpine.store("puzzleList").resort();
@@ -952,6 +1003,8 @@ async function loadFile(file, secretMode, newConnection) {
     gamesaves.current = file;
 
     disconnectAP();
+
+    Alpine.store("puzzleList").clear()
 
     gamesaves.apError = false;
     let connectOk = false;

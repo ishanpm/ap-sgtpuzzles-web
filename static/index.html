@@ -32,38 +32,43 @@
                     </template>
                 </ul>
             </div>
-            <div class="puzzle-filters">
-                <div class="puzzle-filters-section">
-                    <label>Group: <select>
-                        <option>None</option>
-                        <option>Status</option>
-                        <option>Genre</option>
-                    </select></label>
-                    <label>Sort: <select>
-                        <option>Number</option>
-                        <option>Status</option>
-                        <option>Genre</option>
-                        <option>Parameters</option>
-                        <option>Received</option>
-                    </select></label>
-                </div>
-                <div class="puzzle-filters-section">
-                    Hide:
-                    <div>
-                        <label>Unsolved <input type="checkbox"/></label>
-                        <label>Solved <input type="checkbox"/></label>
+            <div class="puzzle-filters" x-data="$store.puzzleList.display">
+                <button class="puzzle-filters-folder" @click="expandFilters=!expandFilters">
+                    <span x-text="expandFilters ? '&#9660;' : '&#9654;'"></span> Filters
+                </button>
+                <div x-show="expandFilters">
+                    <div class="puzzle-filters-section">
+                        <label>Group: <select x-model="groupBy">
+                            <option value="none">None</option>
+                            <option value="status">Status</option>
+                            <option value="genre">Genre</option>
+                        </select></label>
+                        <label>Sort: <select x-model="sortBy">
+                            <option value="index">Number</option>
+                            <option value="status">Status</option>
+                            <option value="genre">Genre</option>
+                            <option value="parameters">Parameters</option>
+                            <option value="order">Received</option-->
+                        </select></label>
                     </div>
-                    <div>
-                        <label>Has reward <input type="checkbox"/></label>
-                        <label>Reward collected <input type="checkbox"/></label>
-                    </div>
-                    <div>
-                        <label>Locked <input type="checkbox"/></label>
-                        <label>Unlocked <input type="checkbox"/></label>
+                    <div class="puzzle-filters-section">
+                        Hide:
+                        <div>
+                            <label>Unsolved <input type="checkbox" x-model="hiddenTypes" value="unsolved"/></label>
+                            <label>Solved <input type="checkbox" x-model="hiddenTypes" value="solved"/></label>
+                        </div>
+                        <div>
+                            <label>Has reward <input type="checkbox" x-model="hiddenTypes" value="uncollected"/></label>
+                            <label>Reward collected <input type="checkbox" x-model="hiddenTypes" value="collected"/></label>
+                        </div>
+                        <div>
+                            <label>Locked <input type="checkbox" x-model="hiddenTypes" value="locked"/></label>
+                            <label>Unlocked <input type="checkbox" x-model="hiddenTypes" value="unlocked"/></label>
+                        </div>
                     </div>
                 </div>
             </div>
-            <ul class="puzzle-selector" x-data="$store.puzzleList" role="list">
+            <ul class="puzzle-selector" x-data="$store.puzzleList" role="list" x-init="$watch('display',() => resort())">
                 <template x-if="solveTarget !== null">
                     <li>
                         <button class="puzzle finish-button" :class="{solved: finished}" :disabled="solveCount &lt; solveTarget" @click="onFinishClick()">
